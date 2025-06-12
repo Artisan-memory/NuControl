@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 admins_commands: dict[str, dict[str, str]] = {
     "en": {
+        "help": "Help",
+        "clipboard": "Clipboard",
         "lock": "Lock the computer",
         "logout": "Log out of the current user session",
         "cancel": "Cancel any scheduled actions (shutdown, reboot, hibernation)",
@@ -22,6 +24,8 @@ admins_commands: dict[str, dict[str, str]] = {
         "ls": "Show the contents of the current directory",
     },
     "ru": {
+        "help": "Помощь",
+        "clipboard": "Буфер обмена",
         "lock": "Заблокировать компьютер",
         "logout": "Выход из текущей учетной записи",
         "cancel": "Отменить запланированные действия (выключение ПК, перезагрузка, гибернация)",
