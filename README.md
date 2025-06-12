@@ -5,7 +5,9 @@
 </div>
 
 
-**NuControl** is an application designed to remotely control your PC using a telegram bot, Based on the idea of Tostapunk[MIT](./LICENSE-MIT). The project currently: **BETA** there are a lot of problems. I will fix them when I will have a time. [CLICK HERE FOR THE GUI](README_IMAGES/gui_image1.png)
+**NuControl** is an application designed to remotely control your PC using a telegram bot, based on the idea of [Tostapunk's project](https://github.com/Tostapunk/PC-Control-telegram-bot)MIT. 
+
+The project currently: **BETA** there are a lot of problems. I will fix them when I will have a time. [CLICK HERE FOR THE GUI](README_IMAGES/gui_image1.png)
 
 ___
 
