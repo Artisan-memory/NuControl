@@ -1,0 +1,17 @@
+{
+    "Logs": "Logs",
+    "Friends": "Friends",
+    "Settings": "Settings",
+    "Start": "Start",
+    "Stop": "Stop",
+    "Language": "Language",
+    "Autostart": "Autostart",
+    "Bot Access": "Bot Access",
+    "Admin ID (yours)": "Admin ID (yours in TG)",
+    "BOT_TOKEN": "BOT_TOKEN",
+    "no_internet_connection": "No internet connection",
+    "Bot_access_tooltip": "Turn on/off access to the bot from friends.\nThis function controls whether allowed\n users can manage your PC. ",
+    "Write your bot token here or close the window if you have already entered the token": "Write your bot token here or close the window if you have already entered the token",
+    "admin_id_error": "You forgot to specify the administrator ID in the settings or it is incorrect!",
+    "bot_token_error": "Bot token is invalid!"
+}

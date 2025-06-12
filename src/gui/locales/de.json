@@ -1,0 +1,17 @@
+{
+    "Logs": "Protokolle",
+    "Friends": "Freunde",
+    "Settings": "Einstellungen",
+    "Start": "Start",
+    "Stop": "Stopp",
+    "Language": "Sprache",
+    "Autostart": "Autostart",
+    "Bot Access": "Bot-Zugang",
+    "Admin ID (yours)": "Admin-ID (deins in TG)",
+    "BOT_TOKEN": "BOT_TOKEN",
+    "no_internet_connection": "Keine Internetverbindung.",
+    "Bot_access_tooltip": "Aktivieren/Deaktivieren des Botzugriffs von Freunden.\nDiese Funktion steuert, ob autorisierte  Benutzer Ihren PC steuern können. ",
+    "Write your bot token here or close the window if you have already entered the token": "Schreiben Sie hier Ihr Bot-Token oder schließen Sie das Fenster, wenn Sie das Token bereits eingegeben haben",
+    "admin_id_error": "Sie haben vergessen, die Administrator-ID in den Einstellungen anzugeben, oder sie ist falsch!",
+    "bot_token_error": "Bot-Token ist ungültig!"
+}
