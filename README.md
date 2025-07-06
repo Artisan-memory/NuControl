@@ -33,73 +33,29 @@ ___
 
 - ### **Available Commands:**
   
-  - **/shutdown** / **/s**  
-    Shut down the computer.
-  
-  - **/reboot** / **/r**  
-    Restart the computer.
-  
-  - **/hibernate** / **/h**  
-    Put the computer to sleep.
-  
-  - **/lock** / **/l**  
-    Lock the computer.
-  
-  - **/logout**  
-    Log out of the current user session.
-  
-  - **/cancel**  
-    Cancel any scheduled actions (shutdown, reboot, hibernation).
-  
-  - **/check**  
-    Check the computer's status.  
-    **/cpu** - Same as **/check**, but more concise.
-  
-  - **/launch {program_name}**  
-    Launch the specified program or file.  
-    _Example: `/launch notepad`_
-  
-  - **/link {url}**  
-    Open the specified URL in a browser.  
-    _Example: `/link http://google.com` or `/link google.com`_  
-    *(Do not use "www", you can simply enter the website name.)*
-  
-  - **/task {process_name}**  
-    Check if a process is running or stop it.  
-    _Example: `/task chrome`_
-  
-  - **/screen**  
-    Take a screenshot of the current screen.
-  
-  - **/keyboard** / **/kb**  
-    Show a keyboard
-  
-  - **/webcam** / **/web** / **/photo**  
-    Capture an image using the webcam.
-  
-  - **/download {file_path}**  
-    Send a specified file from your computer to the user.  
-    _Example: `/download C:/Users/Name/Documents/file.txt`_
-  
-  - **/say {text}**  
-    Play the provided text aloud through the computer’s speakers.  
-    _Currently in Beta._  
-    _Example: `/say Hello World!`_
-  
-  - **/wifi**  
-  Display the SSID and password of the saved Wi-Fi networks on the computer.  
+ | Command                      | Description                                          | Example (only if needed)               |
+|-----------------------------|------------------------------------------------------|--------------------------------------|
+| **/shutdown** / **/s**       | Shut down the computer                               |                                      |
+| **/reboot** / **/r**         | Restart the computer                                 |                                      |
+| **/hibernate** / **/h**      | Put the computer to sleep                            |                                      |
+| **/lock** / **/l**           | Lock the computer                                    |                                      |
+| **/logout**                 | Log out of the current user session                  |                                      |
+| **/cancel**                 | Cancel any scheduled actions                         |                                      |
+| **/check**                 | Check the computer's status                          |                                      |
+| **/cpu**                   | Same as /check but more concise                      |                                      |
+| **/launch {program_name}**  | Launch the specified program or file                 | /launch notepad                      |
+| **/link {url}**             | Open the specified URL in a browser                   | /link google.com                    |
+| **/task {process_name}**    | Check if a process is running or stop it              | /task chrome                       |
+| **/screen**                | Take a screenshot of the current screen               |                                      |
+| **/keyboard** / **/kb**    | Show a keyboard                                       |                                      |
+| **/webcam** / **/web** / **/photo** | Capture an image using the webcam             |                                      |
+| **/download {file_path}**   | Send a specified file to the user                      | /download C:/Users/Name/Documents/file.txt |
+| **/say {text}**            | Play the provided text aloud through speakers          | /say Hello World!                   |
+| **/wifi**                  | Display SSID and password of saved Wi-Fi networks      |                                      |
+| **/ls**                    | Show contents of the current directory                  |                                      |
+| **/cd {directory_path}**    | Change current directory                                | /cd C:/Users/Name/Documents         |
+| **/clipboard** or **/clipboard {text}** | Show or update clipboard content            | /clipboard or /clipboard Hello      |
 
-  - **/ls**  
-  Show the contents of the current directory (similar to `ls` in Linux).  
-
-  - **/cd {directory_path}**  
-  Change the current directory to the specified one (similar to `cd` in Windows).  
-  _Example: `/cd C:/Users/Name/Documents`_
-  
-  - **/clipboard** or **/clipboard {text}**  
-    Show or modify the clipboard content.  
-    - If an argument is provided (text), it updates the clipboard with that text.  
-    - If no argument is given, it simply displays the current clipboard contents.
   
   ---
   
