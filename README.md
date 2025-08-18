@@ -164,8 +164,7 @@ bot_token = YOUR_BOT_TOKEN (str)
 - [ ] Implement automatic version checking
 - [ ] Visualize & rework `/check` 
 - [x] Fix autostart functionality
-- [ ] Implement proper translations for `En`, `Ru`, etc., using `po`/`mo` files
-- [ ] Implement AI voice for the command `/say {argument}`
+- [ ] Implement proper translations for `En`, `Ru`, etc., using `po`/`mo` files <!-- - [ ] Implement AI voice for the command `/say {argument}` -->
 - [ ] Fix question mark tooltip
 - [ ] Recall what I should do else
 
