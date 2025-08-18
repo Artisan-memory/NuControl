@@ -181,7 +181,7 @@ If you have any questions or suggestions, feel free to reach out:
     <a href="https://t.me/tegye23"><img src="https://img.shields.io/badge/Telegram-d5d5d5?style=for-the-badge&logo=telegram&logoColor=0A0209" /></a>
    <br>
   <a href="https://discord.com/users/1139606020935667712"><img src="https://img.shields.io/badge/Discord-d5d5d5?style=for-the-badge&logo=discord&logoColor=0A0209" ></a>
-  <a href="mailto:CodexCodeGeek@outlook.com"><img src="https://img.shields.io/badge/Gmail-d5d5d5?style=for-the-badge&logo=gmail&logoColor=0A0209" /></a> 
+  <a href="mailto:dataroofer@gmail.com"><img src="https://img.shields.io/badge/Gmail-d5d5d5?style=for-the-badge&logo=gmail&logoColor=0A0209" /></a> 
 </div>
 <br>
 
