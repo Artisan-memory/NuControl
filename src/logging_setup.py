@@ -1,4 +1,3 @@
-# logger_setup.py
 import datetime
 
 import logging
@@ -6,7 +5,7 @@ import os
 import aiofiles
 from src.config import LOGS_FILE_PATH
 
-# Create a logs directory if it doesn't exist
+
 os.makedirs(LOGS_FILE_PATH, exist_ok=True)
 
 
@@ -38,7 +37,6 @@ gui_file_handler.setFormatter(main_formatter)
 gui_logger.addHandler(gui_file_handler)
 logger = gui_logger
 
-# Example Usage (you may remove this or keep for testing)
 if __name__ == "__main__":
     log_easy("This is an easy log message.")
     gui_logger.info("This is a GUI log message.")
