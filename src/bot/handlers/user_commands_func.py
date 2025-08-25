@@ -226,8 +226,6 @@ async def link(args):
 
             if platform.system() == "Windows":
                 ret = await asyncio.create_subprocess_shell(f"start {args}")
-            elif platform.system() == "Darwin":
-                ret = await asyncio.create_subprocess_shell(f"open {args}")
             else:
                 logger.error("Unsupported operating system")
                 return "Error: Unsupported operating system"
