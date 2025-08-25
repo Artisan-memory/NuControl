@@ -15,6 +15,7 @@ from src.bot.utils.startup_message import fetch_currency
 # Preparation
 timer = Timer()
 stop_event = asyncio.Event()
+os.makedirs(tmp, exist_ok=True)
 
 
 async def handle_client(reader, writer):
