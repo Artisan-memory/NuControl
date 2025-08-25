@@ -33,10 +33,11 @@ class AuthMiddleware(BaseMiddleware):
             return await handler(event, data)
 
         # If not an admin
-        log_easy(f'User @{user.username} tried to contact the bot')
-        logger.info(f"Someone tried to contact bot | user_id: {user.id} | username: {user.username} | "
-                    f"language_code: {user.language_code} | is_premium: {user.is_premium or False} | "
-                    f"message: {message.text}")
+        log_easy(f'User {user.first_name} (@{user.username or user.id}) sent: {message.text}')
+
+        logger.info(f"Message received | user_id: {user.id} | username: {user.username or 'N/A'} | "
+                f"language_code: {user.language_code} | is_premium: {user.is_premium or False} | "
+                f"message: {message.text}")
 
         await message.reply('IT IS ME: <b>https://github.com/Artisan-memory/NuControl</b>')
         return None
