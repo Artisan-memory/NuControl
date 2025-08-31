@@ -186,6 +186,5 @@ If you have any questions or suggestions, feel free to reach out:
 
 <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="1920" />
 
-## License
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
-This project is distributed under the `GPL-3.0` [LICENSE](./LICENSE) 
