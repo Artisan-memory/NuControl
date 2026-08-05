@@ -7,3 +7,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.pytest_cache/
+
+# First-run dependency marker created by NuControl.bat
+.deps_installed
