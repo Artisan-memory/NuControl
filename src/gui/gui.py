@@ -87,20 +87,26 @@ CLIPBOARD_KEYCODES = {67: "<<Copy>>", 86: "<<Paste>>", 88: "<<Cut>>"}
 SELECT_ALL_KEYCODE = 65
 
 
-def enable_clipboard_shortcuts(entry: CTkEntry) -> None:
-    def on_control_key(event):
-        if event.keycode == SELECT_ALL_KEYCODE:
-            event.widget.select_range(0, 'end')
-            event.widget.icursor('end')
-            return "break"
+def _on_control_key(event):
+    if event.keycode == SELECT_ALL_KEYCODE:
+        event.widget.select_range(0, 'end')
+        event.widget.icursor('end')
+        return "break"
 
-        virtual_event = CLIPBOARD_KEYCODES.get(event.keycode)
-        if virtual_event is None:
-            return None
-        event.widget.event_generate(virtual_event)
-        return "break"  # иначе следом отработает штатная привязка и вставит второй раз
+    virtual_event = CLIPBOARD_KEYCODES.get(event.keycode)
+    if virtual_event is None:
+        return None
+    event.widget.event_generate(virtual_event)
+    return "break"
 
-    entry.bind("<Control-KeyPress>", on_control_key, add="+")
+
+def enable_clipboard_shortcuts(widget) -> None:
+    """Вешаем на весь класс Entry, а не на конкретное поле: до полей внутри
+    CTkInputDialog иначе не дотянуться, там виджеты создаются позже и наружу
+    не отдаются. На латинице Tk выберет более точную штатную привязку
+    <Control-v>, так что второй вставки не будет
+    """
+    widget.bind_class("Entry", "<Control-KeyPress>", _on_control_key, add="+")
 
 
 def check_token(token: str) -> bool:
@@ -287,6 +293,7 @@ class App(customtkinter.CTk):
 
         customtkinter.set_default_color_theme('blue')
         customtkinter.set_appearance_mode("dark")
+        enable_clipboard_shortcuts(self)
         self.configure_columns_and_rows()
         self.button_frame = BaseAppButtons(self, self.translations)
         self.button_frame.grid(row=0, column=0, padx=12, pady=(12, 0), sticky="nsw")
@@ -442,11 +449,9 @@ class App(customtkinter.CTk):
         for i in range(4):
             entry_nickname = CTkEntry(self.right_frame, placeholder_text=f"Nickname {i + 1}")
             entry_nickname.grid(row=2 + i, column=0, padx=10, pady=(12, 0), sticky="w")
-            enable_clipboard_shortcuts(entry_nickname)
             entries.append(entry_nickname)
             entry_userid = CTkEntry(self.right_frame, placeholder_text=f"user_id {i + 1}")
             entry_userid.grid(row=2 + i, column=1, padx=25, pady=(12, 0), sticky="w")
-            enable_clipboard_shortcuts(entry_userid)
             entries.append(entry_userid)
         gui_logger.info("Friends frame displayed")
 
@@ -518,7 +523,6 @@ class App(customtkinter.CTk):
         )
         btn_bot_token.grid(row=6, column=1, padx=0, pady=(0, 0), sticky="ew")
 
-        enable_clipboard_shortcuts(entry_userid)
         entry_userid.bind("<Return>", lambda event: self.commit_admin_id(entry_userid))
         entry_userid.bind("<FocusOut>", lambda event: self.save_admin_id(entry_userid))
 
