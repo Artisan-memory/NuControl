@@ -1,7 +1,7 @@
 # NuControl
 
 <div style="display: flex; justify-content: center; align-items: center;">
-<img src="README_IMAGES\landscape_nobg.png" alt="landscape" width="512" height="200" style="zoom:70%;" />
+<img src="README_IMAGES/landscape_nobg.png" alt="landscape" width="512" height="200" style="zoom:70%;" />
 </div>
 
 
@@ -41,7 +41,7 @@ ___
 | **/lock** / **/l**           | Lock the computer                                    |                                      |
 | **/logout**                 | Log out of the current user session                  |                                      |
 | **/cancel**                 | Cancel any scheduled actions                         |                                      |
-| **/check**                 | Check the computer's status                          |                                      |
+| **/check**                 | Check the computer's status, as a chart plus details |                                      |
 | **/cpu**                   | Same as /check but more concise                      |                                      |
 | **/launch {program_name}**  | Launch the specified program or file                 | /launch notepad                      |
 | **/link {url}**             | Open the specified URL in a browser                   | /link google.com                    |
@@ -90,23 +90,21 @@ ___
     cd NuControl
     ```
 
-2. **Install the required packages**:
+2. **Run it**:
+
+    Double-click **`NuControl.bat`**. On the first run it installs the
+    dependencies from `requirements.txt`, then starts the app. Every later run
+    (including autostart) skips the install and just launches.
+
+    Prefer to do it by hand?
+
     ```sh
     pip install -r requirements.txt
-    ```
-    or open `STARTUP_OPEN_ME.bat`
-
-3. **Run the application**:
-
-    ```sh
     python main.py
     ```
 
-    or
+Requires Python 3.10+ on Windows.
 
-    
-
-    Run **NuControl.bat**
 ---
 
 ## Usage
@@ -127,11 +125,12 @@ Configuration settings are stored in `config.ini`. You can manually edit this fi
 
 ```ini
 [Settings]
-language = en (str)
-autostart = False (bool) 
-enabled = False (bool)
-admin_id = 123456789 (int)
-bot_token = YOUR_BOT_TOKEN (str)
+language = en          ; str: en / ru / de
+autostart = 0          ; 0 or 1
+enabled = 0            ; 0 or 1
+admin_id = 123456789   ; int, your Telegram user id
+bot_token = YOUR_BOT_TOKEN
+control_port = 9999    ; loopback port the GUI uses to stop the bot
 ```
 
 ## Instruction how to add new language
@@ -153,20 +152,38 @@ bot_token = YOUR_BOT_TOKEN (str)
     - Create a new JSON file named with `your_language_file_name.json`.
     - And that's all!! Just translate the file by your needs, (example you can see in `en.json`/`ru.json`/`de.json`)
 
+### Bot translations (gettext)
+
+The GUI uses the JSON locales above. The Telegram bot's own replies use gettext
+catalogs under `src/bot/locales/<lang>/LC_MESSAGES/messages.po`, compiled to
+`.mo`. The bot picks its language from the same `language` setting in
+`config.ini`. The compiled `.mo` files are committed, so running the bot does not
+require Babel.
+
+To change or add bot translations you need Babel (`pip install Babel`):
+
+```sh
+# 1. Update the template with any newly wrapped _( ) strings
+pybabel extract -F babel.cfg -k _ -k gettext -k lazy_gettext -o src/bot/locales/messages.pot .
+# 2. Merge into existing catalogs (or `init -l <lang>` for a new one)
+pybabel update -i src/bot/locales/messages.pot -d src/bot/locales -D messages
+# 3. Edit the msgstr entries in the .po files, then compile
+pybabel compile -d src/bot/locales -D messages
+```
+
 ---
 
 ## TODO (Beta)
-- [ ] Refactor the code
-- [x] Modify the startup logic between `main.py` and `bot.py`
-- [ ] Remove workarounds where they exist
-- [ ] Correct logging
-- [ ] Complete the commands that are implemented but not working
-- [ ] Implement automatic version checking
-- [ ] Visualize & rework `/check` 
-- [x] Fix autostart functionality
-- [ ] Implement proper translations for `En`, `Ru`, etc., using `po`/`mo` files <!-- - [ ] Implement AI voice for the command `/say {argument}` -->
-- [ ] Fix question mark tooltip
-- [ ] Recall what I should do else
+
+- [x] Fix the fatal bot startup crash and the CWD-dependent paths
+- [x] Fix autostart, the log viewer, and the tray "Exit" crash
+- [x] Bot translations (`en`/`ru`/`de`) via aiogram gettext `.po`/`.mo`
+- [x] Clean up `requirements.txt` and remove dead code
+- [x] Automatic version checking
+- [x] Rework `/check` into a chart plus details
+- [x] One screenshot file per monitor, lossless and DPI aware
+- [x] Wait for the network at autostart instead of giving up right after boot
+- [ ] Implement or remove the Friends / Bot Access feature
 
 **Made with ❤️ by Artisan-memory.** And thanks to **[@tyuniha](https://t.me/tyuniha)** for the arts
 
