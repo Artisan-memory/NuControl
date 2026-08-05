@@ -2,7 +2,6 @@ import datetime
 
 import logging
 import os
-import aiofiles
 from src.config import LOGS_FILE_PATH
 
 
@@ -16,6 +15,15 @@ def log_easy(message):
 
     with open(os.path.join(LOGS_FILE_PATH, 'log_easy.log'), 'a', encoding='utf-8') as log_file:
         log_file.write(log_entry + '\n')
+        log_file.flush()  # иначе окно логов показывает строку с задержкой
+
+
+def log_command(command, args=None):
+    log_easy(f"{command} {args}".rstrip() if args else command)
+
+
+def log_result(message):
+    log_easy(f"    → {message}")
 
 
 # Creating formatter
