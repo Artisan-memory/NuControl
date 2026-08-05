@@ -1,27 +1,18 @@
-from aiogram.types import (
-    ReplyKeyboardMarkup,
-    ReplyKeyboardRemove,
-    KeyboardButton,
-    KeyboardButtonPollType
-)
+from aiogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
+from aiogram.utils.i18n import gettext as _
 
 keyboard_clear = ReplyKeyboardRemove()
 
 
-main = ReplyKeyboardMarkup(
-    keyboard=[
-        [
-            KeyboardButton(text="📸 Скриншот"),
-            KeyboardButton(text="🤳 Снимок вебки"),
+def main_keyboard() -> ReplyKeyboardMarkup:
+    """Built per request so the labels are translated for the current locale.
+    The same msgids are matched in bot_messages.menu_handler."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=_("📸 Screenshot")), KeyboardButton(text=_("🤳 Webcam"))],
+            [KeyboardButton(text=_("❌ Cancel"))],
+            [KeyboardButton(text=_("🔒 Lock PC")), KeyboardButton(text=_("🔊 Play sound"))],
         ],
-        [
-            KeyboardButton(text="❌ Отмена")
-        ],
-        [
-            KeyboardButton(text="🔒 Заблокировать комп"),
-            KeyboardButton(text="🔊 Воспроизвести звук")
-        ]
-    ],
-    resize_keyboard=True,
-    selective=True
-)
+        resize_keyboard=True,
+        selective=True,
+    )
