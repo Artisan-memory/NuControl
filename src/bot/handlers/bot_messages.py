@@ -4,93 +4,101 @@ from aiogram import Router, F, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message
-from src.logging_setup import log_easy
+from aiogram.utils.i18n import gettext as _
+from src.config import TMP_DIR
+from src.logging_setup import log_command, log_result
+from src.bot.utils.audio import play
 from loguru import logger
 
 router = Router(name="bot_messages")
-
 
 
 class Form(StatesGroup):
     audio_file = State()
 
 
-@router.message(Form.audio_file, F.content_type.in_({'audio', 'voice'}))
-async def documents_handler(message: Message, state: FSMContext):
-    logger.info("documents_handler: Received a message with audio or voice content.")
+async def send_shots(message: Message, shots):
+    """Скрины уходят реплаем на команду, по файлу на монитор"""
+    for index, (image, path) in enumerate(shots, start=1):
+        caption = _("Monitor {index} of {total}").format(index=index, total=len(shots)) \
+            if len(shots) > 1 else None
+        await message.reply_document(document=image, caption=caption)
+        os.remove(path)
 
-    if message.audio:
-        await message.answer("Это аудио файл")
-        logger.info("documents_handler: The message is an audio file.")
-    elif message.voice:
-        await message.answer("Это голосовое сообщение")
-        logger.info("documents_handler: The message is a voice message.")
-    else:
-        await message.answer("Тип не был определён и не поддерживается")
+
+@router.message(Form.audio_file, F.content_type.in_({'audio', 'voice'}))
+async def documents_handler(message: Message, bot: Bot, state: FSMContext):
+    audio = message.audio or message.voice
+    if audio is None:
+        await message.answer(_("Unsupported content type"))
         logger.warning("documents_handler: Unsupported content type.")
         return
 
-    log_easy("/sound - kb - completed")
     await state.clear()
-    logger.info("documents_handler: State cleared.")
+
+    os.makedirs(TMP_DIR, exist_ok=True)
+    file = await bot.get_file(audio.file_id)
+    # У голосовых нет имени файла, а расширение важно для декодера
+    suffix = os.path.splitext(file.file_path)[1] or ".ogg"
+    path = os.path.join(TMP_DIR, f"{audio.file_unique_id}{suffix}")
+
+    try:
+        await bot.download_file(file.file_path, destination=path)
+        await message.reply(_("Playing it on the speakers..."))
+        await play(path)
+        log_result(_("Audio played"))
+        logger.info(f"documents_handler: played {path}")
+    except Exception as e:
+        logger.error(f"documents_handler: playback failed -> {e}")
+        await message.answer(_("Could not play it: <b>{error}</b>").format(error=e))
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
 
 
 @router.message(F.text)
-async def menu_handler(message: Message, bot: Bot, state: FSMContext):
+async def menu_handler(message: Message, state: FSMContext):
     msg = message.text.lower()
     logger.info(f"menu_handler: Received message: {msg}")
 
-    if msg == "📸 скриншот":
+    if msg == _("📸 Screenshot").lower():
         from src.bot.handlers.user_commands_func import screenshot
-        log_easy("/screenshot - kb")
+        log_command("/screen")
 
-        image, path = await screenshot()
-        logger.info("/screenshot: Screenshot taken.")
+        shots = await screenshot()
+        if not shots:
+            await message.answer(_("Could not take a screenshot."))
+            logger.warning("/screenshot: screenshot failed.")
+        else:
+            await send_shots(message, shots)
 
-        await bot.send_document(chat_id=message.chat.id, document=image)
-        os.remove(path)
-        logger.info("/screenshot: Screenshot sent and file removed.")
-
-    elif msg == "🤳 снимок вебки":
+    elif msg == _("🤳 Webcam").lower():
         from src.bot.handlers.user_commands_func import webcam
-
-        log_easy("/webcam - kb")
+        log_command("/webcam")
 
         text, image, path = await webcam()
-        logger.info("/webcam: Webcam photo taken.")
-
         if image and path is not None:
-            await bot.send_document(chat_id=message.chat.id, document=image)
+            await message.reply_document(document=image)
             os.remove(path)
-            logger.info("/webcam: Webcam photo sent and file removed.")
         else:
-            await bot.send_message(chat_id=message.chat.id, text=text)
+            await message.answer(text)
             logger.warning("/webcam: Webcam photo not taken, no image found.")
 
-    elif msg == "❌ отмена":
+    elif msg == _("❌ Cancel").lower():
         from src.bot.handlers.user_commands_func import cancel
+        log_command("/cancel")
 
-        log_easy("/cancel - kb")
+        await message.answer(await cancel())
 
-        text = await cancel()
-        await message.answer(text)
-        logger.info("/cancel: Operation canceled.")
-        log_easy("/cancel - kb - completed")
-
-    elif msg == "🔒 заблокировать комп":
+    elif msg == _("🔒 Lock PC").lower():
         from src.bot.handlers.user_commands_func import lock_screen
+        log_command("/lock")
 
-        log_easy("/lock - kb")
+        await message.answer(await lock_screen())
 
-        text = await lock_screen()
-        await message.answer(text)
-        logger.info("/lock: Computer locked.")
-        log_easy("/lock - kb - completed")
+    elif msg == _("🔊 Play sound").lower():
+        log_command("/sound")
 
-    elif msg == "🔊 воспроизвести звук":
-        log_easy("/sound - kb")
-
-        await message.answer("Отправьте аудио файл \n<b>(.wav, mp3, .oga, .ogg)</b>\n\n"
-                             "гс принимается тоже!")
+        await message.answer(_("Send an audio file\n<b>(.wav, .mp3, .oga, .ogg)</b>\n\n"
+                               "voice messages are accepted too!"))
         await state.set_state(Form.audio_file)
-        logger.info("/sound: Prompted user to send an audio file and set state to audio_file.")
