@@ -2,21 +2,17 @@
 
 import os
 import json
-import shutil
-import sys
+import threading
+import time
 import webbrowser
 import ctypes
 import requests
 import customtkinter
-import winreg
-import aioshutil
 
-from tkinter import StringVar
+import tkinter
+from tkinter import BooleanVar
 from PIL import Image, ImageTk
 from customtkinter import CTkSwitch, CTkLabel, CTkImage, CTkEntry, CTkButton, CTkComboBox, CTkFrame, CTkTextbox
-from TkToolTip import ToolTip
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
 from CTkMessagebox import CTkMessagebox
 
 from src.logging_setup import gui_logger
@@ -24,7 +20,7 @@ from src.gui.setup_config import load_config
 from src.gui.bot_manager import BotManager
 from src.gui.tray import SystemTray
 
-from src.config import LOGS_FILE_PATH, CONFIG_FILE_PATH, AUTOSTART_PATH
+from src.config import LOGS_FILE_PATH, CONFIG_FILE_PATH, AUTOSTART_PATH, APP_VERSION
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 
@@ -36,7 +32,7 @@ if not os.path.exists(LOG_FILE_PATH):
         "\t\nThis application is designed to control your PC remotely. 🌐\n"
         "For more information and updates, visit our GitHub repository:\n"
         "(https://github.com/Artisan-memory/NuControl)\n\n"
-        "\n\t\t\tVersion: 0.0.1-beta\n\n"
+        f"\n\t\t\tVersion: {APP_VERSION}\n\n"
         "==============================================\n\n"
     )
     with open(LOG_FILE_PATH, 'w', encoding='utf-8') as file:
@@ -78,6 +74,13 @@ class BaseAppButtons(CTkFrame):
         gui_logger.info("Buttons have been created")
 
 
+NETWORK_CHECK_URL = "http://www.google.com"
+NETWORK_CHECK_TIMEOUT = 3
+# После загрузки винды вайфай поднимается не сразу, так что на автозапуске ждём
+STARTUP_NETWORK_WAIT = 30
+NETWORK_RETRY_DELAY = 2
+
+
 def check_token(token: str) -> bool:
     url = f"https://api.telegram.org/bot{token}/getMe"
     try:
@@ -88,43 +91,116 @@ def check_token(token: str) -> bool:
         return False
 
 
-class LogFileEventHandler(FileSystemEventHandler):
+def has_internet() -> bool:
+    try:
+        requests.get(NETWORK_CHECK_URL, timeout=NETWORK_CHECK_TIMEOUT)
+        return True
+    except requests.exceptions.RequestException:
+        return False
+
+
+def wait_for_internet(seconds: int) -> bool:
+    """Retry until the connection is up or the wait runs out."""
+    deadline = time.monotonic() + seconds
+    while not has_internet():
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(NETWORK_RETRY_DELAY)
+    return True
+
+
+class LogTail:
+    """Дописывает в окно только новые строки и держит прокрутку внизу.
+
+    Раньше файл перечитывался целиком на каждое изменение, из-за чего лог дёргался
+    и терял позицию прокрутки. Опрос вместо watchdog - тот на дозапись в конец
+    файла срабатывает не всегда.
+    """
+
+    INTERVAL_MS = 400
+
     def __init__(self, textbox):
-        super().__init__()
         self.textbox = textbox
-        gui_logger.info(f"Initialized LogFileEventHandler with textbox: {self.textbox}")
+        self.offset = 0
+        self.job = None
 
-    def on_modified(self, event):
-        # gui_logger.info(f"Detected file modification event: {event}")
-        # gui_logger.info(f"Event source path: {event.src_path}")
+    def start(self):
+        self.offset = 0
+        self._append(self._read_new())
+        self._schedule()
 
-        if event.src_path.endswith(os.path.basename(LOG_FILE_PATH)):
-            gui_logger.info(f"File modified matches LOG_FILE_PATH: {LOG_FILE_PATH}")
-            try:
-                with open(f"{LOG_FILE_PATH}/log_easy.log", 'r', encoding='utf-8') as file:
-                    log_text = file.read()
-                    gui_logger.info("Read log file content successfully.")
-                    self.update_textbox(log_text)
-            except Exception as e:
-                gui_logger.error(f"Error reading log file: {e}")
-        else:
-            # gui_logger.info("Modified file does not match LOG_FILE_PATH.")
-            pass
+    def stop(self):
+        if self.job is not None:
+            self.textbox.after_cancel(self.job)
+            self.job = None
 
-    def update_textbox(self, text):
-        gui_logger.info("Scheduling update of textbox content.")
-        self.textbox.after(0, self._update_textbox_content, text)
+    def _schedule(self):
+        self.job = self.textbox.after(self.INTERVAL_MS, self._poll)
 
-    def _update_textbox_content(self, text):
-        gui_logger.info("Updating textbox content.")
+    def _poll(self):
+        chunk = self._read_new()
+        if chunk:
+            self._append(chunk)
+        self._schedule()
+
+    def _read_new(self) -> str:
+        try:
+            size = os.path.getsize(LOG_FILE_PATH)
+            if size < self.offset:  # лог обнулили или пересоздали
+                self.offset = 0
+            if size == self.offset:
+                return ""
+            with open(LOG_FILE_PATH, 'r', encoding='utf-8', errors='replace') as file:
+                file.seek(self.offset)
+                chunk = file.read()
+            self.offset = size
+            return chunk
+        except OSError as e:
+            gui_logger.error(f"Error reading log file: {e}")
+            return ""
+
+    def _append(self, text: str):
+        if not text:
+            return
         try:
             self.textbox.configure(state='normal')
-            self.textbox.delete("0.0", "end")
-            self.textbox.insert("0.0", text)
+            self.textbox.insert("end", text)
             self.textbox.configure(state='disabled')
-            gui_logger.info("Textbox content updated successfully.")
+            self.textbox.see("end")
         except Exception as e:
             gui_logger.error(f"Error updating textbox content: {e}")
+
+
+class Tooltip:
+    """Свой тултип: TkToolTip вешается на CTkLabel, а события мыши получают
+    вложенные виджеты, поэтому подсказка не показывалась"""
+
+    def __init__(self, widget, text: str):
+        self.widget = widget
+        self.text = text
+        self.window = None
+        for target in (widget, *widget.winfo_children()):
+            target.bind("<Enter>", self.show, add="+")
+            target.bind("<Leave>", self.hide, add="+")
+
+    def show(self, event=None):
+        if self.window is not None:
+            return
+        x = self.widget.winfo_rootx() + 30
+        y = self.widget.winfo_rooty() + 30
+        self.window = tkinter.Toplevel(self.widget)
+        self.window.wm_overrideredirect(True)
+        self.window.wm_geometry(f"+{x}+{y}")
+        tkinter.Label(
+            self.window, text=self.text, justify="left",
+            background="#34495E", foreground="white", relief="flat",
+            font=("Arial", 10), padx=10, pady=8,
+        ).pack()
+
+    def hide(self, event=None):
+        if self.window is not None:
+            self.window.destroy()
+            self.window = None
 
 
 class App(customtkinter.CTk):
@@ -140,7 +216,9 @@ class App(customtkinter.CTk):
         self.translations = self.load_translations(self.language)
         self.setup_ui()
         self.bot_manager = BotManager(self.config)
-        self.bot_running = self.config.getboolean('Settings', 'enabled')
+        # The bot is a child process that dies with the previous session, so at
+        # GUI launch it is never running yet regardless of the stored flag
+        self.bot_running = False
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.system_tray = SystemTray(self)
         self.user_path = os.path.expanduser("~")
@@ -176,7 +254,7 @@ class App(customtkinter.CTk):
     def setup_ui(self):
         """Set up the user interface."""
         gui_logger.info("Setting up UI")
-        self.title("NuControl || 0.0.1-beta")
+        self.title(f"NuControl || {APP_VERSION}")
         self.geometry("660x400")
         self.iconbitmap(self.Ctk_images_path + 'icon.ico')
         self.resizable(False, False)
@@ -221,7 +299,7 @@ class App(customtkinter.CTk):
         self.start_polling.grid(row=0, column=1, padx=13, pady=(10, 6), sticky="e")
 
     def run_bot(self):
-        """LET'S JSUT FORGET ABOUT THIS"""
+        """Start or stop the bot subprocess, toggling the button label."""
         gui_logger.info("Attempting to run bot")
         if not self.bot_running:
             gui_logger.info("Bot is not running, starting bot")
@@ -237,20 +315,45 @@ class App(customtkinter.CTk):
             gui_logger.info("Bot stopped")
         self.bot_running = not self.bot_running
 
+    def start_bot_when_online(self, wait_seconds: int = STARTUP_NETWORK_WAIT):
+        """Autostart entry point: wait for the network, then start the bot. The wait runs
+        in a worker thread so the window and the tray icon still come up meanwhile."""
+        gui_logger.info("Waiting up to %ss for a connection before starting the bot", wait_seconds)
+
+        def worker():
+            online = wait_for_internet(wait_seconds)
+            self.after(0, self.finish_autostart, online)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def finish_autostart(self, online: bool):
+        """Start the bot, or offer another attempt if there is still no network."""
+        if online:
+            self.run_bot()
+            return
+
+        gui_logger.warning("No internet connection after the startup wait")
+        if self.ask_retry():
+            self.start_bot_when_online()
+
+    def ask_retry(self) -> bool:
+        """Show the offline warning. True if the user wants another attempt."""
+        retry = self.translations["Try again"]
+        answer = CTkMessagebox(
+            title="No internet connection", message=self.translations["no_internet_connection"],
+            icon=self.Ctk_images_path + "no-internet.png", option_1=retry
+        ).get()
+        return answer == retry
+
     def valid_bot_config(self):
         """Validate bot configuration."""
         user_id_check = self.config.get('Settings', 'admin_id')
         bot_token_check = self.config.get('Settings', 'bot_token')
 
-        try:
-            requests.get("http://www.google.com", timeout=2)
-        except requests.exceptions.RequestException:
-            CTkMessagebox(
-                title="No internet connection", message=self.translations["no_internet_connection"],
-                icon=self.Ctk_images_path + "no-internet.png"
-            )
-            gui_logger.warn("No internet connection")
-            return
+        while not has_internet():
+            gui_logger.warning("No internet connection")
+            if not self.ask_retry():
+                return False
 
         if not user_id_check.isdigit():
             CTkMessagebox(
@@ -272,7 +375,7 @@ class App(customtkinter.CTk):
     def open_github(self, event):
         """Open the GitHub repository in the default web browser."""
         gui_logger.info("Opening GitHub repository")
-        webbrowser.open("https://github.com/Artisan-memory/Nucontrol")
+        webbrowser.open("https://github.com/Artisan-memory/NuControl")
 
     def configure_columns_and_rows(self):
         """Configure the grid columns and rows."""
@@ -289,35 +392,18 @@ class App(customtkinter.CTk):
             fg_color="transparent", wrap='none'
         )
         self.textbox.grid(row=0, column=0, sticky="nsew")
-        gui_logger.info(f"Textbox created: {self.textbox}")
 
-        event_handler = LogFileEventHandler(self.textbox)
-        observer = Observer()
-        observer.schedule(event_handler, path=LOG_FILE_PATH, recursive=False)
-        observer.start()
-        gui_logger.info(f"Observer started for path: {os.path.dirname(LOG_FILE_PATH)}")
-
-        self.update_log_text()
+        self.stop_log_tail()
+        self.log_tail = LogTail(self.textbox)
+        self.log_tail.start()
         gui_logger.info("Logs frame displayed")
 
-    def update_log_text(self):
-        """Update the content of the log text box."""
-        gui_logger.info("Updating log text")
-        try:
-            with open(LOG_FILE_PATH, 'r', encoding='utf-8') as file:
-                log_text = file.read()
-                gui_logger.info("Read log file content successfully.")
-            self.textbox.after(0, self._update_textbox_content, log_text)
-        except Exception as e:
-            gui_logger.error(f"Error reading log file: {e}")
-
-    def _update_textbox_content(self, text: str):
-        """Internal method to update the content of the text box."""
-        self.textbox.configure(state='normal')
-        self.textbox.delete("0.0", "end")
-        self.textbox.insert("0.0", text)
-        self.textbox.configure(state='disabled')
-        gui_logger.info("Textbox content updated successfully.")
+    def stop_log_tail(self):
+        """Опрос надо снимать при уходе со вкладки, иначе он останется на убитом виджете"""
+        tail = getattr(self, "log_tail", None)
+        if tail is not None:
+            tail.stop()
+            self.log_tail = None
 
     def show_friends_frame(self):
         """Display the friends frame."""
@@ -359,16 +445,13 @@ class App(customtkinter.CTk):
         )
         settings_label.grid(row=0, column=1, padx=12, pady=(12, 0), sticky="ew")
 
-        self.switch_var_autostart = StringVar(value=self.get_toggle_state(name='autostart'))
+        self.switch_var_autostart = BooleanVar(value=self.get_toggle_state(name='autostart'))
         toggle_settings_autostart = CTkSwitch(
             settings_frame, text=self.translations["Autostart"], command=self.switch_event,
             variable=self.switch_var_autostart, onvalue=True, offvalue=False
         )
         toggle_settings_autostart.grid(row=1, column=0, padx=12, pady=(12, 0), sticky="w")
         gui_logger.info(f"Autostart toggle set to {self.switch_var_autostart.get()}")
-
-        if self.get_toggle_state(name='autostart') == 1:
-            toggle_settings_autostart.select()
 
         toggle_bot_access = CTkSwitch(settings_frame, text=self.translations["Bot Access"])
         toggle_bot_access.grid(row=2, column=0, padx=12, pady=(12, 0), sticky="w")
@@ -377,15 +460,7 @@ class App(customtkinter.CTk):
         question_mark = CTkImage(light_image=question_mark, dark_image=question_mark, size=(25, 25))
         image_widget = CTkLabel(settings_frame, text='', image=question_mark)
         image_widget.grid(row=2, column=1, padx=1, pady=(12, 0), sticky="w")
-        ToolTip(
-            image_widget,
-            msg=self.translations["Bot_access_tooltip"],
-            delay=0.2, follow=True,
-            parent_kwargs={
-                "bg": "#2C3E50", "padx": 14, "pady": 14, "borderwidth": 0, "relief": "flat",
-            },
-            fg="white", bg="#34495E", font=("Arial", 12, "bold"), padx=7, pady=7
-        )
+        Tooltip(image_widget, self.translations["Bot_access_tooltip"])
 
         language_names = list(self.language_map.keys())
         self.combobox_language = CTkComboBox(
@@ -419,7 +494,8 @@ class App(customtkinter.CTk):
         )
         btn_bot_token.grid(row=6, column=1, padx=0, pady=(0, 0), sticky="ew")
 
-        entry_userid.bind("<Return>", self.handle_userid_enter)
+        entry_userid.bind("<Return>", lambda event: self.save_admin_id(entry_userid))
+        entry_userid.bind("<FocusOut>", lambda event: self.save_admin_id(entry_userid))
 
     def open_bot_token_dialog(self):
         """Open the bot token input dialog."""
@@ -436,15 +512,24 @@ class App(customtkinter.CTk):
                 self.config.write(config_file)
             gui_logger.info("Bot token saved")
 
-    def handle_userid_enter(self, event):
-        """Handle the event when the user ID is entered."""
-        user_admin_value = event.widget.get()
-        event.widget.master.focus_set()
-        self.config.set('Settings', 'admin_id', user_admin_value)
-        with open(CONFIG_FILE_PATH, 'w') as config_file:
+    def save_admin_id(self, entry: CTkEntry):
+        """Сохраняет ID и по Enter, и когда поле теряет фокус.
+
+        Читаем через CTkEntry, а не через event.widget: когда поле пустеет,
+        customtkinter кладёт во внутренний Entry текст плейсхолдера, и он уехал бы
+        в конфиг вместо id. Обёртка в этом случае возвращает пустую строку
+        """
+        value = entry.get().strip()
+        if value and not value.isdigit():
+            gui_logger.warning("Admin ID must be a number, got %r", value)
+            return
+        if value == self.config.get('Settings', 'admin_id'):
+            return
+
+        self.config.set('Settings', 'admin_id', value)
+        with open(CONFIG_FILE_PATH, 'w', encoding='utf-8') as config_file:
             self.config.write(config_file)
-        self.right_frame.focus_set()
-        gui_logger.info("Admin ID entered")
+        gui_logger.info("Admin ID saved")
 
 
     def add_to_startup(self, file_path: str) -> bool:
@@ -455,9 +540,9 @@ class App(customtkinter.CTk):
         """
         gui_logger.info("Adding file to startup: %s", file_path)
         try:
-            file_name = os.path.basename(file_path)
-            destination = os.path.join(self.startup_dir, file_name + ".lnk")
-            gui_logger.info("Copying from %s to %s", file_path, destination)
+            shortcut_name = os.path.splitext(os.path.basename(file_path))[0] + ".lnk"
+            destination = os.path.join(self.startup_dir, shortcut_name)
+            gui_logger.info("Creating shortcut %s -> %s", destination, file_path)
 
             if not os.path.exists(file_path):
                 gui_logger.error("File not found: %s", file_path)
@@ -480,7 +565,8 @@ class App(customtkinter.CTk):
         :return: True if removed successfully, False otherwise
         """
         try:
-            target_path = os.path.join(self.startup_dir, file_name + ".lnk")
+            shortcut_name = os.path.splitext(file_name)[0] + ".lnk"
+            target_path = os.path.join(self.startup_dir, shortcut_name)
 
             if os.path.exists(target_path):
                 os.remove(target_path)
@@ -499,33 +585,31 @@ class App(customtkinter.CTk):
         shortcut = shell.CreateShortCut(shortcut_path)
         shortcut.TargetPath = file_path
         shortcut.WorkingDirectory = os.path.dirname(file_path)  # Set working directory
+        shortcut.WindowStyle = 7  # Minimized, so the .bat console does not flash at boot
         shortcut.Save()
 
     def switch_event(self):
         """
         Handle the event when the autostart switch is toggled.
         """
-        gui_logger.info("Autostart switch toggled to %s", str(self.switch_var_autostart.get()))
-        self.config.set('Settings', 'autostart', str(self.switch_var_autostart.get()))
-        with open(CONFIG_FILE_PATH, 'w') as config_file:
+        enabled = bool(self.switch_var_autostart.get())
+        gui_logger.info("Autostart switch toggled to %s", enabled)
+        self.config.set('Settings', 'autostart', '1' if enabled else '0')
+        with open(CONFIG_FILE_PATH, 'w', encoding='utf-8') as config_file:
             self.config.write(config_file)
 
-        # Check whether autostart is toggled on or off
-        if bool(int(self.switch_var_autostart.get())):
-            # Enabling autostart
-            success = self.add_to_startup(AUTOSTART_PATH)
-            if not success:
+        if enabled:
+            if not self.add_to_startup(AUTOSTART_PATH):
                 gui_logger.error("Failed to add file to startup folder")
         else:
-            # Disabling autostart
             file_name = os.path.basename(AUTOSTART_PATH)
-            success = self.remove_from_startup(file_name)
-            if not success:
+            if not self.remove_from_startup(file_name):
                 gui_logger.error("Failed to remove file from startup folder")
 
     def clear_right_frame_widgets(self):
         """Clear all widgets in the right frame."""
         gui_logger.info("Clearing right frame widgets")
+        self.stop_log_tail()
         for widget in self.right_frame.winfo_children():
             widget.destroy()
 
