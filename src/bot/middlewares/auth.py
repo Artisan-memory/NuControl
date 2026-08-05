@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any
 
 from aiogram import BaseMiddleware
 from aiogram.types import Message
+from aiogram.utils.i18n import gettext as _
 from loguru import logger
 
 from src.config import ADMIN_ID
@@ -39,5 +40,8 @@ class AuthMiddleware(BaseMiddleware):
                 f"language_code: {user.language_code} | is_premium: {user.is_premium or False} | "
                 f"message: {message.text}")
 
-        await message.reply('IT IS ME: <b>https://github.com/Artisan-memory/NuControl</b>')
+        await message.reply(
+            _("This bot only answers its owner.") +
+            "\n\n<b>https://github.com/Artisan-memory/NuControl</b>"
+        )
         return None
