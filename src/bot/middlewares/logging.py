@@ -99,67 +99,20 @@ class LoggingMiddleware(BaseMiddleware):
         event: Update,
         data: dict[str, Any],
     ) -> Any:
-        print_attrs: dict = {}
+        sources = [
+            (event.message, self.process_message, "received message"),
+            (event.callback_query, self.process_callback_query, "received callback query"),
+            (event.inline_query, self.process_inline_query, "received inline query"),
+            (event.pre_checkout_query, self.process_pre_checkout_query, "received pre-checkout query"),
+            (event.my_chat_member, self.process_my_chat_member, "received my chat member update"),
+            (event.chat_member, self.process_chat_member, "received chat member update"),
+        ]
 
-        if event.message:
-            message: Message = event.message
-
-            print_attrs = self.process_message(message)
-
-            logger_msg = (
-                "received message | "
-                + " | ".join(f"{key}: {value}" for key, value in print_attrs.items() if value is not None),
-            )
-            self.logger.info(*logger_msg)
-        elif event.callback_query:
-            callback_query: CallbackQuery = event.callback_query
-
-            print_attrs = self.process_callback_query(callback_query)
-
-            logger_msg = (
-                "received callback query | "
-                + " | ".join(f"{key}: {value}" for key, value in print_attrs.items() if value is not None),
-            )
-            self.logger.info(*logger_msg)
-        elif event.inline_query:
-            inline_query: InlineQuery = event.inline_query
-
-            print_attrs = self.process_inline_query(inline_query)
-
-            logger_msg = (
-                "received inline query | "
-                + " | ".join(f"{key}: {value}" for key, value in print_attrs.items() if value is not None),
-            )
-            self.logger.info(*logger_msg)
-        elif event.pre_checkout_query:
-            pre_checkout_query: PreCheckoutQuery = event.pre_checkout_query
-
-            print_attrs = self.process_pre_checkout_query(pre_checkout_query)
-
-            logger_msg = (
-                "received pre-checkout query | "
-                + " | ".join(f"{key}: {value}" for key, value in print_attrs.items() if value is not None),
-            )
-            self.logger.info(*logger_msg)
-        elif event.my_chat_member:
-            upd: ChatMemberUpdated = event.my_chat_member
-
-            print_attrs = self.process_my_chat_member(upd)
-
-            logger_msg = (
-                "received my chat member update | "
-                + " | ".join(f"{key}: {value}" for key, value in print_attrs.items() if value is not None),
-            )
-            self.logger.info(*logger_msg)
-        elif event.chat_member:
-            upd: ChatMemberUpdated = event.chat_member
-
-            print_attrs = self.process_chat_member(upd)
-
-            logger_msg = (
-                "received chat member update | "
-                + " | ".join(f"{key}: {value}" for key, value in print_attrs.items() if value is not None),
-            )
-            self.logger.info(*logger_msg)
+        for obj, process, label in sources:
+            if obj is not None:
+                attrs = process(obj)
+                details = " | ".join(f"{key}: {value}" for key, value in attrs.items() if value is not None)
+                self.logger.info(f"{label} | {details}")
+                break
 
         return await handler(event, data)
