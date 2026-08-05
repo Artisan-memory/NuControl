@@ -1,11 +1,10 @@
-import socket
-
 import pystray
 import os
 
 from PIL import Image
 from pystray import MenuItem as Item
 
+from src.config import APP_VERSION
 from src.gui.setup_config import load_config
 from src.gui.bot_manager import BotManager
 from src.logging_setup import gui_logger
@@ -19,7 +18,7 @@ class SystemTray:
         self.app = app
         self.menu = (Item('Show', self.on_show), Item('Exit', self.on_quit))
         self.icon = self.create_image()
-        self.tray = pystray.Icon("name", self.icon, "NuControl v0.0.1-beta", self.menu)
+        self.tray = pystray.Icon("name", self.icon, f"NuControl v{APP_VERSION}", self.menu)
 
         self.config = load_config()
         self.language = self.config.get('Settings', 'language')
@@ -48,10 +47,7 @@ class SystemTray:
     def on_quit(self):
         """Quit the application and stop the tray icon."""
         gui_logger.info("Quitting the application and stopping the tray icon")
-        #self.bot_manager.stop_process()
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect(("127.0.0.1", 9999))
-            s.sendall(b"stop")
+        self.bot_manager.stop_process()
         self.tray.stop()
         self.app.quit()
-        gui_logger.info("App quiting and tray icon stopped")
+        gui_logger.info("App quitting and tray icon stopped")
