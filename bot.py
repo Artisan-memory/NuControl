@@ -1,21 +1,26 @@
 from __future__ import annotations
 import asyncio
+import os
 from datetime import datetime
 
+from aiogram.utils.i18n import gettext as _
 from loguru import logger
-from src.config import LOGS_FILE_PATH, ADMIN_ID
+from src.config import LOGS_FILE_PATH, TMP_DIR, ADMIN_ID, APP_VERSION, CONTROL_HOST, CONTROL_PORT
 from src.bot.callbacks import get_callbacks_router
-from src.bot.core.loader import bot, dp
+from src.bot.core.loader import bot, dp, i18n
 from src.bot.handlers import get_handlers_router
 from src.bot.keyboards.default_commands import remove_default_commands, set_default_commands
 from src.bot.middlewares import register_middlewares
+from src.bot.middlewares.i18n import resolve_locale
 from src.bot.utils.timer import Timer
 from src.bot.utils.startup_message import fetch_currency
+from src.bot.utils.version_check import check_for_update
 
 # Preparation
 timer = Timer()
 stop_event = asyncio.Event()
-os.makedirs(tmp, exist_ok=True)
+os.makedirs(TMP_DIR, exist_ok=True)
+os.makedirs(os.path.join(LOGS_FILE_PATH, "botLog"), exist_ok=True)
 
 
 async def handle_client(reader, writer):
@@ -37,8 +42,16 @@ async def handle_client(reader, writer):
 
 async def command_listener():
     logger.debug("command_listener: starting server")
-    server = await asyncio.start_server(handle_client, '127.0.0.1', 9999)
+    try:
+        server = await asyncio.start_server(handle_client, CONTROL_HOST, CONTROL_PORT)
+    except OSError as e:
+        logger.error(f"command_listener: cannot bind {CONTROL_HOST}:{CONTROL_PORT} ({e}); "
+                     f"another bot instance is probably already running. "
+                     f"Set a different control_port in config.ini to run both.")
+        return
     logger.info(f"command_listener: Listening on {server.sockets[0].getsockname()}")
+    async with server:
+        await server.serve_forever()
 
 
 async def on_startup() -> None:
@@ -65,12 +78,33 @@ async def on_startup() -> None:
 
     logger.info("on_startup: Bot started")
 
-    global bot_use_name
-    bot_use_name = bot_info.username
+    if ADMIN_ID is None:
+        logger.warning("on_startup: admin_id is not set, skipping startup message")
+        return
 
-    usd, eur = await fetch_currency()
-    startup_message = f"""Добрый день! Время {datetime.now().strftime("%H:%M:%S")}\n\n💵Доллар: <b>{usd}</b>
-💶Евро: <b>{eur}</b>"""
+    # The startup message is built outside any update, so the locale the i18n
+    # middleware would normally provide has to be set up by hand here
+    with i18n.context(), i18n.use_locale(resolve_locale(i18n)):
+        startup_message = _("NuControl {version} started at {time}").format(
+            version=APP_VERSION, time=datetime.now().strftime('%H:%M:%S'),
+        )
+
+        try:
+            newer = await check_for_update()
+            if newer:
+                startup_message += "\n\n" + _(
+                    "🔔 Update available: <b>{latest}</b> (you have {current})"
+                ).format(latest=newer, current=APP_VERSION)
+        except Exception as e:
+            logger.warning(f"on_startup: update check failed -> {e}")
+
+        try:
+            usd, eur = await fetch_currency()
+            startup_message += "\n\n" + _("💵 USD: <b>{usd}</b>\n💶 EUR: <b>{eur}</b>").format(
+                usd=usd, eur=eur,
+            )
+        except Exception as e:
+            logger.warning(f"on_startup: could not fetch currency rates -> {e}")
 
     await bot.send_message(chat_id=ADMIN_ID, text=startup_message)
 
