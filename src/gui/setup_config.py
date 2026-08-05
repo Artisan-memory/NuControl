@@ -1,26 +1,14 @@
-# setup_config.py
-
 import configparser
 import os
-from src.config import project_root
 
-def create_config_file():
-    with open(os.path.join(project_root, 'config.ini'), 'w') as file:
-        file.write('[Settings]\n')
-        file.write('language = en\n')
-        file.write('autostart = 0\n')
-        file.write('enabled = 0\n')
-        file.write('friends_restrict = 0\n')
-        file.write('logs = False\n')
-        file.write('debug = False\n')
-        file.write('admin_id = \n')
-        file.write('bot_token = ENTER_TOKEN\n')
+from src.config import CONFIG_FILE_PATH, write_default_config
 
 
-def load_config():
-    if not os.path.exists('config.ini'):
-        create_config_file()
+def load_config() -> configparser.ConfigParser:
+    """Read config.ini from the project root, creating it with defaults if missing."""
+    if not os.path.exists(CONFIG_FILE_PATH):
+        write_default_config()
 
     config = configparser.ConfigParser()
-    config.read('config.ini')
+    config.read(CONFIG_FILE_PATH, encoding='utf-8')
     return config
