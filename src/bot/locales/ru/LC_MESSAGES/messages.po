@@ -1,0 +1,612 @@
+# Russian translations for NuControl.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the NuControl project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: NuControl 0.0.1\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-08-05 06:12+0300\n"
+"PO-Revision-Date: 2026-08-02 10:12+0300\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && "
+"(n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: bot.py:88
+#, python-brace-format
+msgid "NuControl {version} started at {time}"
+msgstr "NuControl {version} запущен в {time}"
+
+#: bot.py:96
+#, python-brace-format
+msgid "🔔 Update available: <b>{latest}</b> (you have {current})"
+msgstr "🔔 Доступно обновление: <b>{latest}</b> (у вас {current})"
+
+#: bot.py:103
+#, python-brace-format
+msgid ""
+"💵 USD: <b>{usd}</b>\n"
+"💶 EUR: <b>{eur}</b>"
+msgstr ""
+"💵 Доллар: <b>{usd}</b>\n"
+"💶 Евро: <b>{eur}</b>"
+
+#: src/bot/callbacks/callbacks.py:48
+msgid "Language changed"
+msgstr "Язык изменён"
+
+#: src/bot/callbacks/callbacks_func.py:37
+#, python-brace-format
+msgid "Process <b>{program}</b> has been killed"
+msgstr "Процесс <b>{program}</b> остановлен"
+
+#: src/bot/callbacks/callbacks_func.py:40
+#, python-brace-format
+msgid "Unable to kill process <b>{program}</b>. It was not found or an error occurred"
+msgstr "Не удалось остановить процесс <b>{program}</b>. Он не найден или произошла ошибка"
+
+#: src/bot/callbacks/callbacks_func.py:49 src/bot/handlers/user_commands.py:381
+#: src/bot/handlers/user_commands.py:405 src/bot/handlers/user_commands.py:458
+#: src/bot/handlers/user_commands_func.py:181 src/bot/handlers/user_commands_func.py:204
+#: src/bot/handlers/user_commands_func.py:241 src/bot/handlers/user_commands_func.py:265
+#: src/bot/handlers/user_commands_func.py:294 src/bot/handlers/user_commands_func.py:338
+#: src/bot/handlers/user_commands_func.py:360 src/bot/handlers/user_commands_func.py:389
+#: src/bot/handlers/user_commands_func.py:547
+#, python-brace-format
+msgid "Error: <b>{error}</b>"
+msgstr "Ошибка: <b>{error}</b>"
+
+#: src/bot/handlers/bot_messages.py:23
+#, python-brace-format
+msgid "Monitor {index} of {total}"
+msgstr "Монитор {index} из {total}"
+
+#: src/bot/handlers/bot_messages.py:33
+msgid "Unsupported content type"
+msgstr "Тип содержимого не поддерживается"
+
+#: src/bot/handlers/bot_messages.py:47
+msgid "Playing it on the speakers..."
+msgstr "Проигрываю в динамики..."
+
+#: src/bot/handlers/bot_messages.py:49
+msgid "Audio played"
+msgstr "Аудио проиграно"
+
+#: src/bot/handlers/bot_messages.py:53
+#, python-brace-format
+msgid "Could not play it: <b>{error}</b>"
+msgstr "Не удалось проиграть: <b>{error}</b>"
+
+#: src/bot/handlers/bot_messages.py:64 src/bot/keyboards/reply.py:12
+msgid "📸 Screenshot"
+msgstr "📸 Скриншот"
+
+#: src/bot/handlers/bot_messages.py:70 src/bot/handlers/user_commands.py:238
+msgid "Could not take a screenshot."
+msgstr "Не удалось сделать снимок экрана."
+
+#: src/bot/handlers/bot_messages.py:75 src/bot/keyboards/reply.py:12
+msgid "🤳 Webcam"
+msgstr "🤳 Снимок вебки"
+
+#: src/bot/handlers/bot_messages.py:87 src/bot/keyboards/reply.py:13
+msgid "❌ Cancel"
+msgstr "❌ Отмена"
+
+#: src/bot/handlers/bot_messages.py:93 src/bot/keyboards/reply.py:14
+msgid "🔒 Lock PC"
+msgstr "🔒 Заблокировать ПК"
+
+#: src/bot/handlers/bot_messages.py:99 src/bot/keyboards/reply.py:14
+msgid "🔊 Play sound"
+msgstr "🔊 Воспроизвести звук"
+
+#: src/bot/handlers/bot_messages.py:102
+msgid ""
+"Send an audio file\n"
+"<b>(.wav, .mp3, .oga, .ogg)</b>\n"
+"\n"
+"voice messages are accepted too!"
+msgstr ""
+"Отправьте аудиофайл\n"
+"<b>(.wav, .mp3, .oga, .ogg)</b>\n"
+"\n"
+"голосовые сообщения тоже принимаются!"
+
+#: src/bot/handlers/errors.py:31
+#, python-brace-format
+msgid ""
+"💥 <b>{error}</b>\n"
+"<blockquote>{message}</blockquote>"
+msgstr ""
+"💥 <b>{error}</b>\n"
+"<blockquote>{message}</blockquote>"
+
+#: src/bot/handlers/user_commands.py:47
+msgid "Hi! I'm the <b>NuControl</b> bot"
+msgstr "Привет! Я бот <b>NuControl</b>"
+
+#: src/bot/handlers/user_commands.py:62 src/bot/handlers/user_commands_func.py:197
+msgid "Specified file does not exist."
+msgstr "Указанный файл не существует."
+
+#: src/bot/handlers/user_commands.py:68
+#, python-brace-format
+msgid "<b>{name}</b> is too big to send ({size})"
+msgstr "<b>{name}</b> слишком большой, чтобы отправить ({size})"
+
+#: src/bot/handlers/user_commands.py:85
+msgid "Choose the bot language:"
+msgstr "Выберите язык бота:"
+
+#: src/bot/handlers/user_commands.py:96
+msgid ""
+"<i>No text provided</i>\n"
+"<blockquote><b>Example:</b> /msg + text</blockquote>"
+msgstr ""
+"<i>Не указан текст</i>\n"
+"<blockquote><b>Пример:</b> /msg + текст</blockquote>"
+
+#: src/bot/handlers/user_commands.py:101
+msgid "Shown on the screen"
+msgstr "Показано на экране"
+
+#: src/bot/handlers/user_commands.py:109
+msgid "Keyboard raised"
+msgstr "Клавиатура поднята"
+
+#: src/bot/handlers/user_commands.py:117
+msgid ""
+"<b>Available commands:</b>\n"
+"\n"
+"<b>/shutdown</b> or <b>/s</b> — shut down the computer\n"
+"<b>/reboot</b> or <b>/r</b> — restart the computer\n"
+"<b>/hibernate</b> or <b>/h</b> — put the computer to sleep\n"
+"<b>/lock</b> or <b>/l</b> — lock the computer\n"
+"<b>/logout</b> — log out of the current session\n"
+"<b>/cancel</b> — cancel scheduled actions (shutdown, reboot, hibernate)\n"
+"<b>/check</b> — check the computer status\n"
+"<b>/cpu</b> — same as /check, but concise\n"
+"<b>/launch</b> <i>program</i> — launch a program (e.g. <code>/launch notepad</code>)\n"
+"<b>/link</b> <i>url</i> — open a link (e.g. <code>/link google.com</code>)\n"
+"<b>/task</b> <i>process</i> — check whether a process is running or stop it (e.g. "
+"<code>/task chrome</code>)\n"
+"<b>/screen</b> — take a screenshot\n"
+"<b>/keyboard</b> or <b>/kb</b> — show the keyboard\n"
+"<b>/webcam</b> or <b>/web</b> or <b>/photo</b> — capture a webcam image\n"
+"<b>/download</b> <i>path</i> — send a file from the computer (e.g. <code>/download "
+"C:/file.txt</code>)\n"
+"<b>/say</b> <i>text</i> — speak the text through the speakers (e.g. <code>/say Hello "
+"World!</code>)\n"
+"<b>/clipboard</b> [<i>text</i>] — show or set the clipboard contents\n"
+"<b>/wifi</b> — show SSID and password of saved Wi-Fi networks\n"
+"<b>/ls</b> — browse the current directory, tap a name to open or download it\n"
+"<b>/cd</b> <i>path</i> — change the current directory\n"
+"<b>/msg</b> <i>text</i> — show a message box on the PC screen\n"
+"<b>/lang</b> — change the bot language\n"
+"\n"
+"<b>Tip:</b> add a delay in minutes to shutdown/reboot/hibernate/lock, e.g. "
+"<i>/shutdown 2</i>."
+msgstr ""
+"<b>Доступные команды:</b>\n"
+"\n"
+"<b>/shutdown</b> или <b>/s</b> — выключить компьютер\n"
+"<b>/reboot</b> или <b>/r</b> — перезагрузить компьютер\n"
+"<b>/hibernate</b> или <b>/h</b> — отправить компьютер в сон\n"
+"<b>/lock</b> или <b>/l</b> — заблокировать компьютер\n"
+"<b>/logout</b> — выйти из текущей учётной записи\n"
+"<b>/cancel</b> — отменить запланированные действия (выключение, перезагрузка, "
+"гибернация)\n"
+"<b>/check</b> — состояние компьютера\n"
+"<b>/cpu</b> — то же, что /check, только кратко\n"
+"<b>/launch</b> <i>программа</i> — запустить программу (например <code>/launch "
+"notepad</code>)\n"
+"<b>/link</b> <i>ссылка</i> — открыть ссылку (например <code>/link google.com</code>)\n"
+"<b>/task</b> <i>процесс</i> — проверить, запущен ли процесс, или остановить его "
+"(например <code>/task chrome</code>)\n"
+"<b>/screen</b> — сделать снимок экрана\n"
+"<b>/keyboard</b> или <b>/kb</b> — показать клавиатуру\n"
+"<b>/webcam</b> или <b>/web</b> или <b>/photo</b> — снимок с веб-камеры\n"
+"<b>/download</b> <i>путь</i> — прислать файл с компьютера (например <code>/download "
+"C:/file.txt</code>)\n"
+"<b>/say</b> <i>текст</i> — произнести текст в динамики (например <code>/say "
+"Привет!</code>)\n"
+"<b>/clipboard</b> [<i>текст</i>] — показать или изменить буфер обмена\n"
+"<b>/wifi</b> — показать SSID и пароли сохранённых Wi-Fi сетей\n"
+"<b>/ls</b> — проводник по текущей папке, по имени можно открыть или скачать\n"
+"<b>/cd</b> <i>путь</i> — сменить текущую папку\n"
+"<b>/msg</b> <i>текст</i> — показать сообщение на экране ПК\n"
+"<b>/lang</b> — сменить язык бота\n"
+"\n"
+"<b>Подсказка:</b> к shutdown/reboot/hibernate/lock можно добавить задержку в минутах,"
+" например <i>/shutdown 2</i>."
+
+#: src/bot/handlers/user_commands.py:265
+msgid ""
+"Something went wrong...\n"
+"Your program was not found on the computer"
+msgstr ""
+"Что-то пошло не так...\n"
+"Ваша программа не найдена на компьютере"
+
+#: src/bot/handlers/user_commands.py:266
+msgid "Program not found"
+msgstr "Программа не найдена"
+
+#: src/bot/handlers/user_commands.py:304
+msgid ""
+"Something went wrong...\n"
+"timeout exceeded 😨"
+msgstr ""
+"Что-то пошло не так...\n"
+"превышено время ожидания 😨"
+
+#: src/bot/handlers/user_commands.py:339
+#, python-brace-format
+msgid "<b>📂 {path}</b>"
+msgstr "<b>📂 {path}</b>"
+
+#: src/bot/handlers/user_commands.py:341
+msgid "The folder is empty."
+msgstr "Папка пуста."
+
+#: src/bot/handlers/user_commands.py:360
+#, python-brace-format
+msgid "{count} items"
+msgstr "Всего: {count}"
+
+#: src/bot/handlers/user_commands.py:390
+#, python-brace-format
+msgid ""
+"<i>Wrong command usage!</i>\n"
+"<blockquote><b>Example:</b> /cd + folder name or path</blockquote>\n"
+"\n"
+"You are in:\n"
+"<code>{path}</code>"
+msgstr ""
+"<i>Неправильное использование команды!</i>\n"
+"<blockquote><b>Пример:</b> /cd + имя папки или путь</blockquote>\n"
+"\n"
+"Вы в:\n"
+"<code>{path}</code>"
+
+#: src/bot/handlers/user_commands.py:397
+msgid "Directory does not exist."
+msgstr "Папка не существует."
+
+#: src/bot/handlers/user_commands.py:430
+#, python-brace-format
+msgid "Error running netsh: {error}"
+msgstr "Ошибка при выполнении netsh: {error}"
+
+#: src/bot/handlers/user_commands.py:455
+msgid "No saved Wi-Fi networks with a password were found."
+msgstr "Сохранённые сети Wi-Fi с паролем не найдены."
+
+#: src/bot/handlers/user_commands_func.py:56 src/bot/handlers/user_commands_func.py:479
+#, python-brace-format
+msgid "{used} used of {total} · {free} free"
+msgstr "Занято {used} из {total} · свободно {free}"
+
+#: src/bot/handlers/user_commands_func.py:73
+msgid "<b>⚙️ CPU</b>"
+msgstr "<b>⚙️ Процессор</b>"
+
+#: src/bot/handlers/user_commands_func.py:76
+msgid "<b>🧠 Memory</b>"
+msgstr "<b>🧠 Память</b>"
+
+#: src/bot/handlers/user_commands_func.py:78
+msgid "<b>🖴 Disks (total)</b>"
+msgstr "<b>🖴 Диски (всего)</b>"
+
+#: src/bot/handlers/user_commands_func.py:80
+msgid "<b>⏳ Uptime</b>"
+msgstr "<b>⏳ Время работы</b>"
+
+#: src/bot/handlers/user_commands_func.py:88
+#, python-brace-format
+msgid "<b>Error occurred:</b> {error}"
+msgstr "<b>Произошла ошибка:</b> {error}"
+
+#: src/bot/handlers/user_commands_func.py:108
+msgid "PC has been successfully locked"
+msgstr "ПК успешно заблокирован"
+
+#: src/bot/handlers/user_commands_func.py:111
+#, python-brace-format
+msgid "Error locking the computer: {error}"
+msgstr "Ошибка при блокировке компьютера: {error}"
+
+#: src/bot/handlers/user_commands_func.py:119
+msgid "Logging out of the current session..."
+msgstr "Выход из текущей сессии..."
+
+#: src/bot/handlers/user_commands_func.py:122
+#, python-brace-format
+msgid "Error logging out: {error}"
+msgstr "Ошибка при выходе из системы: {error}"
+
+#: src/bot/handlers/user_commands_func.py:158
+msgid "Error: <b>unable to open the webcam</b>"
+msgstr "Ошибка: <b>не удалось открыть веб-камеру</b>"
+
+#: src/bot/handlers/user_commands_func.py:178
+msgid "Error while capturing from the webcam."
+msgstr "Ошибка при захвате с веб-камеры."
+
+#: src/bot/handlers/user_commands_func.py:194
+msgid "File sent successfully!"
+msgstr "Файл успешно отправлен!"
+
+#: src/bot/handlers/user_commands_func.py:200
+msgid ""
+"<i>No file path provided</i>\n"
+"<blockquote><b>Example:</b> /download + file path</blockquote>"
+msgstr ""
+"<i>Не указан путь к файлу</i>\n"
+"<blockquote><b>Пример:</b> /download + путь к файлу</blockquote>"
+
+#: src/bot/handlers/user_commands_func.py:234
+msgid "Text played successfully"
+msgstr "Текст воспроизведён"
+
+#: src/bot/handlers/user_commands_func.py:237
+msgid ""
+"<i>No text provided</i>\n"
+"<blockquote><b>Example:</b> /say + text</blockquote>"
+msgstr ""
+"<i>Не указан текст</i>\n"
+"<blockquote><b>Пример:</b> /say + текст</blockquote>"
+
+#: src/bot/handlers/user_commands_func.py:251
+msgid "Use the /link command to open URLs."
+msgstr "Используйте команду /link для открытия ссылок."
+
+#: src/bot/handlers/user_commands_func.py:257
+#, python-brace-format
+msgid "Launching <b>{program}</b>..."
+msgstr "Запуск <b>{program}</b>..."
+
+#: src/bot/handlers/user_commands_func.py:258
+#, python-brace-format
+msgid "Failed to launch {program}"
+msgstr "Не удалось запустить {program}"
+
+#: src/bot/handlers/user_commands_func.py:261
+msgid ""
+"<i>No program name provided</i>\n"
+"<blockquote><b>Example:</b> /launch + program name</blockquote>"
+msgstr ""
+"<i>Не указано имя программы</i>\n"
+"<blockquote><b>Пример:</b> /launch + имя программы</blockquote>"
+
+#: src/bot/handlers/user_commands_func.py:281
+msgid "Error: unsupported operating system"
+msgstr "Ошибка: неподдерживаемая операционная система"
+
+#: src/bot/handlers/user_commands_func.py:286
+#, python-brace-format
+msgid "Opening <b>{url}</b>..."
+msgstr "Открываю <b>{url}</b>..."
+
+#: src/bot/handlers/user_commands_func.py:287
+#, python-brace-format
+msgid "Cannot open {url}"
+msgstr "Не удалось открыть {url}"
+
+#: src/bot/handlers/user_commands_func.py:290
+msgid ""
+"<i>No link provided</i>\n"
+"<blockquote><b>Example:</b> /link + web link</blockquote>"
+msgstr ""
+"<i>Не указана ссылка</i>\n"
+"<blockquote><b>Пример:</b> /link + веб-ссылка</blockquote>"
+
+#: src/bot/handlers/user_commands_func.py:302
+msgid "Clipboard updated"
+msgstr "Буфер обмена обновлён"
+
+#: src/bot/handlers/user_commands_func.py:303
+#, python-brace-format
+msgid "*Clipboard updated:* `{value}`"
+msgstr "*Буфер обмена обновлён:* `{value}`"
+
+#: src/bot/handlers/user_commands_func.py:307
+#, python-brace-format
+msgid ""
+"*Clipboard contains:*\n"
+"➖➖➖➖➖➖➖➖➖\n"
+"```\n"
+"{content}```"
+msgstr ""
+"*Буфер обмена содержит:*\n"
+"➖➖➖➖➖➖➖➖➖\n"
+"```\n"
+"{content}```"
+
+#: src/bot/handlers/user_commands_func.py:309
+msgid "*Clipboard is empty.*"
+msgstr "*Буфер обмена пуст.*"
+
+#: src/bot/handlers/user_commands_func.py:312
+#, python-brace-format
+msgid "Error: *{error}*"
+msgstr "Ошибка: *{error}*"
+
+#: src/bot/handlers/user_commands_func.py:329
+#, python-brace-format
+msgid "Computer will shut down in {seconds} seconds"
+msgstr "Компьютер выключится через {seconds} сек"
+
+#: src/bot/handlers/user_commands_func.py:331
+#, python-brace-format
+msgid "Computer will shut down in {minutes} minutes"
+msgstr "Компьютер выключится через {minutes} мин"
+
+#: src/bot/handlers/user_commands_func.py:335
+msgid "Computer will shut down immediately"
+msgstr "Компьютер выключится немедленно"
+
+#: src/bot/handlers/user_commands_func.py:351 src/bot/handlers/user_commands_func.py:357
+#, python-brace-format
+msgid "Computer will reboot in {seconds} seconds"
+msgstr "Компьютер перезагрузится через {seconds} сек"
+
+#: src/bot/handlers/user_commands_func.py:353
+#, python-brace-format
+msgid "Computer will reboot in {minutes} minutes"
+msgstr "Компьютер перезагрузится через {minutes} мин"
+
+#: src/bot/handlers/user_commands_func.py:380
+#, python-brace-format
+msgid "Computer will hibernate in {seconds} seconds"
+msgstr "Компьютер уснёт через {seconds} сек"
+
+#: src/bot/handlers/user_commands_func.py:382
+#, python-brace-format
+msgid "Computer will hibernate in {minutes} minutes"
+msgstr "Компьютер уснёт через {minutes} мин"
+
+#: src/bot/handlers/user_commands_func.py:386
+msgid "Computer will hibernate now"
+msgstr "Компьютер сейчас уйдёт в спящий режим"
+
+#: src/bot/handlers/user_commands_func.py:397
+msgid "Scheduled actions have been canceled"
+msgstr "Запланированные действия отменены"
+
+#: src/bot/handlers/user_commands_func.py:401
+msgid "No scheduled actions to cancel"
+msgstr "Нет запланированных действий для отмены"
+
+#: src/bot/handlers/user_commands_func.py:404
+#, python-brace-format
+msgid "Error canceling scheduled actions: {error}"
+msgstr "Ошибка при отмене запланированных действий: {error}"
+
+#: src/bot/handlers/user_commands_func.py:442
+msgid ""
+"<i>No process name provided</i>\n"
+"<blockquote><b>Example:</b> /task + process name</blockquote>"
+msgstr ""
+"<i>Не указано имя процесса</i>\n"
+"<blockquote><b>Пример:</b> /task + имя процесса</blockquote>"
+
+#: src/bot/handlers/user_commands_func.py:451
+#, python-brace-format
+msgid "Error looking up process {program}"
+msgstr "Ошибка при поиске процесса {program}"
+
+#: src/bot/handlers/user_commands_func.py:455
+#, python-brace-format
+msgid "<i>Process <b>{program}</b> not found</i>"
+msgstr "<i>Процесс <b>{program}</b> не найден</i>"
+
+#: src/bot/handlers/user_commands_func.py:461
+#, python-brace-format
+msgid "🔍 Found {count} process(es) matching <b>{program}</b>"
+msgstr "🔍 Найдено процессов по запросу <b>{program}</b>: {count}"
+
+#: src/bot/handlers/user_commands_func.py:464
+#, python-brace-format
+msgid "<b>{name}</b> — {count} × {memory}"
+msgstr "<b>{name}</b> — {count} × {memory}"
+
+#: src/bot/handlers/user_commands_func.py:471
+#, python-brace-format
+msgid "Kill {program}"
+msgstr "Завершить {program}"
+
+#: src/bot/handlers/user_commands_func.py:497
+msgid "<b>💻 System</b>"
+msgstr "<b>💻 Система</b>"
+
+#: src/bot/handlers/user_commands_func.py:498
+#, python-brace-format
+msgid "OS: <b>{value}</b>"
+msgstr "ОС: <b>{value}</b>"
+
+#: src/bot/handlers/user_commands_func.py:499
+#, python-brace-format
+msgid "Computer: <b>{value}</b>"
+msgstr "Компьютер: <b>{value}</b>"
+
+#: src/bot/handlers/user_commands_func.py:500
+#, python-brace-format
+msgid "User: <b>{value}</b>"
+msgstr "Пользователь: <b>{value}</b>"
+
+#: src/bot/handlers/user_commands_func.py:501
+#, python-brace-format
+msgid "CPU: <code>{value}</code>"
+msgstr "Процессор: <code>{value}</code>"
+
+#: src/bot/handlers/user_commands_func.py:502
+#, python-brace-format
+msgid "Python: <code>{value}</code>"
+msgstr "Python: <code>{value}</code>"
+
+#: src/bot/handlers/user_commands_func.py:504
+#, python-brace-format
+msgid "<b>🧠 Memory</b> — {percent:.0f}%"
+msgstr "<b>🧠 Память</b> — {percent:.0f}%"
+
+#: src/bot/handlers/user_commands_func.py:508
+msgid "Memory"
+msgstr "Память"
+
+#: src/bot/handlers/user_commands_func.py:514
+#, python-brace-format
+msgid "{name} ({fstype})"
+msgstr "{name} ({fstype})"
+
+#: src/bot/handlers/user_commands_func.py:517
+#, python-brace-format
+msgid "<b>🖴 {label}</b> — {percent:.0f}%"
+msgstr "<b>🖴 {label}</b> — {percent:.0f}%"
+
+#: src/bot/handlers/user_commands_func.py:523
+#, python-brace-format
+msgid "VRAM: {vram} MB · Temp: {temp} °C"
+msgstr "Видеопамять: {vram} МБ · Температура: {temp} °C"
+
+#: src/bot/handlers/user_commands_func.py:526
+#, python-brace-format
+msgid "<b>🎮 GPU {index}</b> — {load}%"
+msgstr "<b>🎮 Видеокарта {index}</b> — {load}%"
+
+#: src/bot/middlewares/auth.py:44
+msgid "This bot only answers its owner."
+msgstr "Этот бот отвечает только своему владельцу."
+
+#~ msgid "This is an audio file"
+#~ msgstr "Это аудиофайл"
+
+#~ msgid "This is a voice message"
+#~ msgstr "Это голосовое сообщение"
+
+#~ msgid ""
+#~ "<b>Current directory:</b>\n"
+#~ "<code>{path}</code>\n"
+#~ "\n"
+#~ "<b>Contents:</b>\n"
+#~ "\n"
+#~ msgstr ""
+#~ "<b>Текущая папка:</b>\n"
+#~ "<code>{path}</code>\n"
+#~ "\n"
+#~ "<b>Содержимое:</b>\n"
+#~ "\n"
+
+#~ msgid "You are in: <code>{path}</code>"
+#~ msgstr "Вы в: <code>{path}</code>"
+
