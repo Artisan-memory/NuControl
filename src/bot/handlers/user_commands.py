@@ -1,16 +1,29 @@
 import os
 import asyncio
-import clipboard
+import html
+import re
+import shutil
+import tempfile
+
 from aiogram import Router, Bot
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import CommandStart, Command, CommandObject
-from aiogram.types import Message
-from watchdog.watchmedo import command
+from aiogram.types import FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.utils.i18n import gettext as _
 from loguru import logger
-from src.logging_setup import log_easy
-from src.config import project_root
+
+from src.logging_setup import log_command, log_result
+from src.bot.handlers.bot_messages import send_shots
+from src.bot.handlers.user_commands_func import human_size
+from src.bot.utils import browser, process
 
 commands_router = Router(name="user_commands")
+
+LANGUAGES = {"en": "🇬🇧 English", "ru": "🇷🇺 Русский", "de": "🇩🇪 Deutsch"}
+# Ботам Telegram отдаёт заливать не больше 50 МБ
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+# Длинные имена рвут лимит сообщения в 4096 символов
+NAME_LIMIT = 60
 
 
 # In a future for friends list
@@ -25,90 +38,135 @@ async def get_user_info(message: Message) -> str:
 
 
 @commands_router.message(CommandStart())
-async def cmd_start(message: Message):
-    text_user = await get_user_info(message)
-    log_easy(f"/start {text_user}")
-    logger.info(f"Received /start {text_user}")
+async def cmd_start(message: Message, bot: Bot, command: CommandObject):
+    # Ссылки из /ls приходят сюда: payload - токен пути
+    target = browser.path_for(command.args) if command.args else None
+    if target:
+        await open_target(message, bot, target)
+        return
 
+    log_command("/start")
     await message.answer(
-        "Привет! Я бот <b>NuControl</b>\n\n"
-        "https://github.com/Artisan-memory/NuControl🌈\n"
+        _("Hi! I'm the <b>NuControl</b> bot") +
+        "\n\nhttps://github.com/Artisan-memory/NuControl 🌈"
     )
+
+
+async def open_target(message: Message, bot: Bot, target: str):
+    """Папку открываем, файл отдаём"""
+    if os.path.isdir(target):
+        log_command("/ls", target)
+        set_cd(target)
+        text, keyboard = await render_listing(bot)
+        await message.answer(text, reply_markup=keyboard, disable_web_page_preview=True)
+        return
+
+    if not os.path.isfile(target):
+        await message.answer(_("Specified file does not exist."))
+        return
+
+    log_command("/download", target)
+    size = os.path.getsize(target)
+    if size > MAX_UPLOAD_BYTES:
+        await message.answer(_("<b>{name}</b> is too big to send ({size})").format(
+            name=os.path.basename(target), size=human_size(size)))
+        return
+
+    await message.answer_document(FSInputFile(target),
+                                  caption=f"<code>{html.escape(os.path.basename(target))}</code>")
+
+
+@commands_router.message(Command("lang", "language"))
+async def cmd_language(message: Message):
+    log_command("/lang")
+
+    buttons = [
+        [InlineKeyboardButton(text=title, callback_data=f"lang_{code}")]
+        for code, title in LANGUAGES.items()
+    ]
+    await message.answer(
+        _("Choose the bot language:"),
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+    )
+
+
+@commands_router.message(Command("msg", "notify"))
+async def cmd_message_on_screen(message: Message, command: CommandObject):
+    from src.bot.handlers.user_commands_func import show_on_screen
+    log_command("/msg", command.args)
+
+    if not command.args:
+        await message.answer(_("<i>No text provided</i>\n"
+                               "<blockquote><b>Example:</b> /msg + text</blockquote>"))
+        return
+
+    await show_on_screen(command.args)
+    await message.answer(_("Shown on the screen"))
 
 
 @commands_router.message(Command("kb", "keyboard"))
 async def cmd_keyboard(message: Message):
-    from src.bot.keyboards.reply import main
-    text_user = await get_user_info(message)
-    log_easy(f"/keyboard {text_user}")
-    logger.info(f"Received /keyboard {text_user}")
+    from src.bot.keyboards.reply import main_keyboard
+    log_command("/keyboard")
 
-    await message.answer("Клавиатура поднята", reply_markup=main)
+    await message.answer(_("Keyboard raised"), reply_markup=main_keyboard())
 
 
 @commands_router.message(Command("help"))
 async def cmd_help(message: Message):
-    text_user = await get_user_info(message)
-    log_easy(f"/help {text_user}")
-    logger.info(f"Received /help {text_user}")
+    log_command("/help")
 
-    text = "<b>Доступные команды:</b>\n"
-    text += ("""
-<b>/shutdown</b> или <b>/s</b> - Выключить компьютер  
-<b>/reboot</b> или <b>/r</b> - Перезагрузить компьютер  
-<b>/hibernate</b> или <b>/h</b> - Перевести компьютер в спящий режим  
-<b>/lock</b> или <b>/l</b> - Заблокировать компьютер  
-<b>/logout</b> - Выход из текущей учетной записи  
-<b>/cancel</b> - Отменить запланированные действия (выключение ПК, перезагрузка, гибернация)  
-<b>/check</b> - Проверить состояние компьютера  
-<i>/cpu</i> - То же самое, но сжато  
-<b>/launch</b> <i>{program_name}</i> - Запустить программу  
-<i>Пример:</i> <code>/launch notepad</code>  
-<b>/link</b> <i>{url}</i> - Открыть ссылку  
-<i>Пример:</i> <code>/link http://google.com</code> или <code>/link google.com</code> (не используйте "www", можете просто указать название сайта)  
-<b>/task</b> <i>{process_name}</i> - Проверить, запущен ли процесс в данный момент, или остановить его  
-<i>Пример:</i> <code>/task chrome</code>  
-<b>/screen</b> - Сделать снимок экрана и получить его  
-<b>/keyboard</b> или <b>/kb</b> - Показать клавиатуру  
-<b>/webcam</b> или <b>/web</b> или <b>/photo</b> - Снять изображение с веб-камеры  
-<b>/download</b> <i>{file_path}</i> - Отправить указанный файл с компьютера пользователю  
-<i>Пример:</i> <code>/download C:/Users/Name/Documents/file.txt</code>  
-<b>/say</b> <i>{text}</i> - Проиграть указанный текст через динамики компьютера  
-<i>Находится в бета-версии.</i>  
-<i>Пример:</i> <code>/say Hello World!</code>  
-<b>/clipboard</b> или <b>/clipboard</b> <i>{text}</i> - Показать или изменить содержимое буфера обмена  
-<i>Если передан аргумент (текст), он обновит буфер обмена</i>  
-<i>Если аргумент не указан, просто отобразит текущее содержимое буфера обмена</i>  
-<b>/wifi</b> - Показать SSID и пароль сохраненных Wi-Fi сетей на компьютере  
-<i>Пример:</i> <code>/wifi</code>  
-<b>/ls</b> - Показать содержимое текущей директории (как команда <code>ls</code> в Linux)  
-<i>Пример:</i> <code>/ls</code>  
-<b>/cd</b> <i>{directory_path}</i> - Перейти в указанную директорию (как команда <code>cd</code> в Windows)  
-<i>Пример:</i> <code>/cd C:/Users/Name/Documents</code>
-
-
-<b>Вы можете установить время задержки для выполнения первых четырех команд, используя <i>название команды + время в минутах</i> после команды.</b>  
-<i>Пример: /shutdown 2</i> или <i>/s 2</i> (выключение через 2 минуты).""")
+    text = _(
+        "<b>Available commands:</b>\n\n"
+        "<b>/shutdown</b> or <b>/s</b> — shut down the computer\n"
+        "<b>/reboot</b> or <b>/r</b> — restart the computer\n"
+        "<b>/hibernate</b> or <b>/h</b> — put the computer to sleep\n"
+        "<b>/lock</b> or <b>/l</b> — lock the computer\n"
+        "<b>/logout</b> — log out of the current session\n"
+        "<b>/cancel</b> — cancel scheduled actions (shutdown, reboot, hibernate)\n"
+        "<b>/check</b> — check the computer status\n"
+        "<b>/cpu</b> — same as /check, but concise\n"
+        "<b>/launch</b> <i>program</i> — launch a program (e.g. <code>/launch notepad</code>)\n"
+        "<b>/link</b> <i>url</i> — open a link (e.g. <code>/link google.com</code>)\n"
+        "<b>/task</b> <i>process</i> — check whether a process is running or stop it (e.g. <code>/task chrome</code>)\n"
+        "<b>/screen</b> — take a screenshot\n"
+        "<b>/keyboard</b> or <b>/kb</b> — show the keyboard\n"
+        "<b>/webcam</b> or <b>/web</b> or <b>/photo</b> — capture a webcam image\n"
+        "<b>/download</b> <i>path</i> — send a file from the computer (e.g. <code>/download C:/file.txt</code>)\n"
+        "<b>/say</b> <i>text</i> — speak the text through the speakers (e.g. <code>/say Hello World!</code>)\n"
+        "<b>/clipboard</b> [<i>text</i>] — show or set the clipboard contents\n"
+        "<b>/wifi</b> — show SSID and password of saved Wi-Fi networks\n"
+        "<b>/ls</b> — browse the current directory, tap a name to open or download it\n"
+        "<b>/cd</b> <i>path</i> — change the current directory\n"
+        "<b>/msg</b> <i>text</i> — show a message box on the PC screen\n"
+        "<b>/lang</b> — change the bot language\n\n"
+        "<b>Tip:</b> add a delay in minutes to shutdown/reboot/hibernate/lock, e.g. <i>/shutdown 2</i>."
+    )
     await message.answer(text=text)
 
 
 @commands_router.message(Command("lock", "l"))
 async def cmd_lock(message: Message):
     from src.bot.handlers.user_commands_func import lock_screen
-    text_user = await get_user_info(message)
-    log_easy(f"/lock {text_user}")
-    logger.info(f"Received /lock {text_user}")
+    log_command("/lock")
 
     text = await lock_screen()
+    await message.answer(text)
+
+
+@commands_router.message(Command("logout"))
+async def cmd_logout(message: Message):
+    from src.bot.handlers.user_commands_func import logout
+    log_command("/logout")
+
+    text = await logout()
     await message.answer(text)
 
 
 @commands_router.message(Command("shutdown", "s"))
 async def cmd_shutdown(message: Message, command: CommandObject):
     from src.bot.handlers.user_commands_func import shutdown
-    text_user = await get_user_info(message)
-    log_easy(f"/shutdown {text_user}")
-    logger.info(f"Received /shutdown {text_user}")
+    log_command("/shutdown", command.args)
 
     text = await shutdown(args=command.args)
     await message.answer(text)
@@ -117,9 +175,7 @@ async def cmd_shutdown(message: Message, command: CommandObject):
 @commands_router.message(Command("reboot", "r"))
 async def cmd_reboot(message: Message, command: CommandObject):
     from src.bot.handlers.user_commands_func import reboot
-    text_user = await get_user_info(message)
-    log_easy(f"/reboot {text_user}")
-    logger.info(f"Received /reboot {text_user}")
+    log_command("/reboot", command.args)
 
     text = await reboot(args=command.args)
     await message.answer(text)
@@ -128,9 +184,7 @@ async def cmd_reboot(message: Message, command: CommandObject):
 @commands_router.message(Command("hibernate", "h"))
 async def cmd_hibernate(message: Message, command: CommandObject):
     from src.bot.handlers.user_commands_func import hibernate
-    text_user = await get_user_info(message)
-    log_easy(f"/hibernate {text_user}")
-    logger.info(f"Received /hibernate {text_user}")
+    log_command("/hibernate", command.args)
 
     text = await hibernate(args=command.args)
     await message.answer(text)
@@ -139,32 +193,39 @@ async def cmd_hibernate(message: Message, command: CommandObject):
 @commands_router.message(Command("cancel"))
 async def cmd_cancel(message: Message):
     from src.bot.handlers.user_commands_func import cancel
-    text_user = await get_user_info(message)
-    log_easy(f"/cancel {text_user}")
-    logger.info(f"Received /cancel {text_user}")
+    log_command("/cancel")
 
     text = await cancel()
     await message.answer(text)
-    log_easy(f"/cancel completed {text_user}")
+
+
+CAPTION_LIMIT = 1024
 
 
 @commands_router.message(Command("check"))
 async def cmd_check(message: Message):
     from src.bot.handlers.user_commands_func import check_hardware
-    text_user = await get_user_info(message)
-    log_easy(f"/check {text_user}")
-    logger.info(f"Received /check {text_user}")
+    log_command("/check")
 
-    hardware_info = await check_hardware()
-    await message.answer(text=hardware_info)
+    text, image_path = await check_hardware()
+    if image_path is None:
+        await message.answer(text=text)
+        return
+
+    card = FSInputFile(image_path)
+    if len(text) <= CAPTION_LIMIT:
+        await message.answer_photo(card, caption=text)
+    else:
+        # Too many drives to fit a caption; the report follows the card
+        await message.answer_photo(card)
+        await message.answer(text=text)
+    os.remove(image_path)
 
 
 @commands_router.message(Command("cpu"))
-async def cmd_check(message: Message):
+async def cmd_cpu(message: Message):
     from src.bot.handlers.user_commands_func import get_system_info
-    text_user = await get_user_info(message)
-    log_easy(f"/check {text_user}")
-    logger.info(f"Received /check {text_user}")
+    log_command("/cpu")
 
     text = await get_system_info()
     await message.answer(text)
@@ -173,43 +234,39 @@ async def cmd_check(message: Message):
 @commands_router.message(Command("screen", "screenshot"))
 async def cmd_screen(message: Message, bot: Bot):
     from src.bot.handlers.user_commands_func import screenshot
-    text_user = await get_user_info(message)
-    log_easy(f"/screen {text_user}")
-    logger.info(f"Received /screen {text_user}")
+    log_command("/screen")
 
-    image, path = await screenshot()
-    await bot.send_document(chat_id=message.chat.id, document=image)
-    os.remove(path)
+    shots = await screenshot()
+    if not shots:
+        await message.answer(_("Could not take a screenshot."))
+        return
+
+    await send_shots(message, shots)
 
 
 @commands_router.message(Command('webcam', 'web', 'photo'))
 async def cmd_webcam(message: Message, bot: Bot):
     from src.bot.handlers.user_commands_func import webcam
-    text_user = await get_user_info(message)
-    log_easy(f"/webcam {text_user}")
-    logger.info(f"Received /webcam {text_user}")
+    log_command("/webcam")
 
     text, image, path = await webcam()
     if image and path is not None:
-        await bot.send_document(chat_id=message.chat.id, document=image)
+        await message.reply_document(document=image)
         os.remove(path)
     else:
-        await bot.send_message(chat_id=message.chat.id, text=text)
+        await message.answer(text)
 
 
 @commands_router.message(Command("launch"))
 async def cmd_launch(message: Message, bot: Bot, command: CommandObject):
     from src.bot.handlers.user_commands_func import launch
-    text_user = await get_user_info(message)
-    log_easy(f"/launch {text_user}")
-    logger.info(f"Received /launch {text_user}")
+    log_command("/launch", command.args)
 
     try:
         text = await asyncio.wait_for(launch(args=command.args), timeout=5)
     except asyncio.TimeoutError:
-        text = "Что-то пошло не так...\n" \
-               "Ваша программа не была найдена на вашем компьютере"
-        log_easy(f"/launch timeout exceeded {text_user}")
+        text = _("Something went wrong...\nYour program was not found on the computer")
+        log_result(_("Program not found"))
 
     await bot.send_message(chat_id=message.chat.id, text=text)
 
@@ -217,21 +274,16 @@ async def cmd_launch(message: Message, bot: Bot, command: CommandObject):
 @commands_router.message(Command("link"))
 async def cmd_link(message: Message, bot: Bot, command: CommandObject):
     from src.bot.handlers.user_commands_func import link
-    text_user = await get_user_info(message)
-    log_easy(f"/link {text_user}")
-    logger.info(f"Received /link {text_user}")
+    log_command("/link", command.args)
 
     text = await link(args=command.args)
     await bot.send_message(chat_id=message.chat.id, text=text)
-    log_easy(f"/link completed {text_user}")
 
 
 @commands_router.message(Command('clipboard'))
 async def clipboard_command(message: Message, bot: Bot, command: CommandObject):
     from src.bot.handlers.user_commands_func import clipboard, replace_tags
-    text_user = await get_user_info(message)
-    log_easy(f"/clipboard {text_user}")
-    logger.info(f"Received /clipboard {text_user}")
+    log_command("/clipboard", command.args)
 
     text = await clipboard(args=command.args)
 
@@ -246,17 +298,14 @@ async def clipboard_command(message: Message, bot: Bot, command: CommandObject):
 @commands_router.message(Command("task"))
 async def cmd_task(message: Message, command: CommandObject):
     from src.bot.handlers.user_commands_func import task
-    text_user = await get_user_info(message)
-    log_easy(f"/task {text_user}")
-    logger.info(f"Received /task {text_user}")
+    log_command("/task", command.args)
 
     task_kb = None
     try:
         text, task_kb = await asyncio.wait_for(task(args=command.args), timeout=5)
     except asyncio.TimeoutError:
-        text = "Smth went wrong...\n" \
-               "timeout exceeded 😨"
-        logger.error(f"/task timeout exceeded {text_user}")
+        text = _("Something went wrong...\ntimeout exceeded 😨")
+        logger.error("/task timeout exceeded")
 
     if text.strip():  # Check if the text is empty
         if task_kb is not None:
@@ -270,164 +319,147 @@ async def cmd_task(message: Message, command: CommandObject):
 @commands_router.message(Command("say"))
 async def cmd_say(message: Message, command: CommandObject):
     from src.bot.handlers.user_commands_func import say
-    text_user = await get_user_info(message)
-    log_easy(f"/say {text_user}")
-    logger.info(f"Received /say {text_user}")
+    log_command("/say", command.args)
 
     text = await say(command.args)
     await message.answer(text=text)
-    log_easy(f"/say completed {text_user}")
 
-
-###################################### TESTING CODE BELOW, DO NOT MODIFY
 
 cd = os.path.expanduser("~")
-from aiogram.utils.deep_linking import decode_payload
+
+
+def set_cd(path: str) -> None:
+    global cd
+    cd = os.path.abspath(path)
+
+
+async def render_listing(bot: Bot, page: int = 0) -> tuple[str, InlineKeyboardMarkup | None]:
+    """Страница содержимого текущей папки. Имена - ссылки вида ?start=<токен>:
+    в callback_data путь не влезает, а по такой ссылке бот сам получит команду"""
+    username = (await bot.me()).username
+    entries = await asyncio.to_thread(browser.read_dir, cd)
+
+    header = _("<b>📂 {path}</b>").format(path=cd)
+    if not entries:
+        return f"{header}\n\n{_('The folder is empty.')}", None
+
+    pages = browser.page_count(len(entries))
+    page = max(0, min(page, pages - 1))
+
+    lines = [header, ""]
+    parent = os.path.dirname(cd)
+    if page == 0 and parent != cd:
+        lines.append(f'📁 <a href="https://t.me/{username}?start={browser.token_for(parent)}">..</a>')
+
+    for entry in browser.slice_page(entries, page):
+        icon = "📁" if entry.is_dir() else "📄"
+        link = f"https://t.me/{username}?start={browser.token_for(entry.path)}"
+        # Имя идёт в HTML, а в нём легально бывают & и скобки
+        name = html.escape(entry.name[:NAME_LIMIT])
+        lines.append(f'{icon} <a href="{link}">{name}</a>')
+
+    if pages == 1:
+        return "\n".join(lines), None
+
+    lines.append("")
+    lines.append(_("{count} items").format(count=len(entries)))
+
+    row = []
+    if page > 0:
+        row.append(InlineKeyboardButton(text="«", callback_data=f"ls_page_{page - 1}"))
+    row.append(InlineKeyboardButton(text=f"{page + 1} / {pages}", callback_data="ls_noop"))
+    if page < pages - 1:
+        row.append(InlineKeyboardButton(text="»", callback_data=f"ls_page_{page + 1}"))
+
+    return "\n".join(lines), InlineKeyboardMarkup(inline_keyboard=[row])
 
 
 @commands_router.message(Command("ls"))
-async def list_directory(message: Message):
-    text_user = await get_user_info(message)
-    log_easy(f"/ls {text_user}")
-    logger.info(f"Received /ls {text_user}")
+async def list_directory(message: Message, bot: Bot):
+    log_command("/ls")
 
     try:
-        contents = os.listdir(cd)
-        if not contents:
-            await message.answer("Папка пуста.")
-            log_easy(f"/ls - directory is empty {text_user}")
-        else:
-            response = f"<b>Вы находитесь в директории:\n <code>{cd}</code>\n\n" \
-                       "Директория содержит</b>:\n\n"
-            for item in contents:
-                response += f"<b>-</b> <code>{item}</code>\n"
-            await message.answer(response)
+        text, keyboard = await render_listing(bot)
+        await message.answer(text, reply_markup=keyboard, disable_web_page_preview=True)
     except Exception as e:
-        logger.error(f"/ls error: {str(e)} {text_user}")
-        await message.answer(f"Произошла ошибка: <b>{str(e)}</b>")
+        logger.error(f"/ls error: {str(e)}")
+        await message.answer(_("Error: <b>{error}</b>").format(error=e))
 
 
 @commands_router.message(Command("cd"))
 async def change_directory(message: Message, bot: Bot, command: CommandObject):
-    text_user = await get_user_info(message)
-    log_easy(f"/cd {text_user}")
-    logger.info(f"Received /cd {text_user}")
+    log_command("/cd", command.args)
 
-    a = message.text
-    print(a)
     try:
-        global cd
-        args = command.args
-        if args:
-            new_directory = args
-            logger.info(new_directory)
-            new_path = os.path.join(cd, new_directory)
-            if os.path.exists(new_path) and os.path.isdir(new_path):
-                cd = new_path
-                await bot.send_message(message.chat.id, f"Вы в: <code>{cd}</code>")
-            else:
-                await bot.send_message(message.chat.id, f"Директория не существует.")
-        else:
-            text = f"""<i>Неправильно использована команда! </i>
-<blockquote><b>Пример использования:\n </b>/cd + имя папки или путь</blockquote>\n\n
-P.S. Вы находитесь в:\n <code>{cd}</code>"""
-            await bot.send_message(message.chat.id, text)
+        if not command.args:
+            await message.answer(_("<i>Wrong command usage!</i>\n"
+                                   "<blockquote><b>Example:</b> /cd + folder name or path</blockquote>\n\n"
+                                   "You are in:\n<code>{path}</code>").format(path=cd))
+            return
+
+        new_path = os.path.abspath(os.path.join(cd, command.args))
+        if not os.path.isdir(new_path):
+            await message.answer(_("Directory does not exist."))
+            return
+
+        set_cd(new_path)
+        text, keyboard = await render_listing(bot)
+        await message.answer(text, reply_markup=keyboard, disable_web_page_preview=True)
     except Exception as e:
-        logger.error(f"/cd error: {str(e)} {text_user}")
-        await bot.send_message(message.chat.id, f"Произошла ошибка: <b>{str(e)}</b>")
+        logger.error(f"/cd error: {str(e)}")
+        await message.answer(_("Error: <b>{error}</b>").format(error=e))
 
 
 @commands_router.message(Command('download'))
 async def handle_download_command(message: Message, bot: Bot, command: CommandObject):
     from src.bot.handlers.user_commands_func import download
-    text_user = await get_user_info(message)
-    log_easy(f"/download {text_user}")
-    logger.info(f"Received /download {text_user}")
+    log_command("/download", command.args)
 
     text, file = await download(args=command.args)
     if file is not None:
         await bot.send_document(chat_id=message.chat.id, document=file)
     await bot.send_message(chat_id=message.chat.id, text=text)
-    log_easy(f"/download completed {text_user}")
-
-
-import subprocess
-import re
 
 
 @commands_router.message(Command('wifi'))
 async def get_wifi_passwords(message: Message):
-    text_user = await get_user_info(message)
-    log_easy(f"/wifi {text_user}")
-    logger.info(f"Received /wifi {text_user}")
+    log_command("/wifi")
 
+    export_dir = tempfile.mkdtemp(prefix="nucontrol_wifi_")
     try:
-        command = ['netsh', 'wlan', 'export', 'profile', 'key=clear']
-        result = subprocess.run(command, capture_output=True, text=True)
-
+        result = await process.run_async(
+            ['netsh', 'wlan', 'export', 'profile', 'key=clear', f'folder={export_dir}'],
+            capture_output=True, text=True
+        )
         if result.returncode != 0:
-            await message.answer(f"Ошибка при выполнении команды netsh: {result.stderr}")
+            await message.answer(_("Error running netsh: {error}").format(error=result.stderr.strip()))
             logger.debug(f'Error running netsh command: {result.stderr}')
             return
 
-        if os.path.exists('Wi-Fi-App.xml'):
-            with open('Wi-Fi-App.xml', 'r') as file:
-                xml_content = file.read()
+        message_text = ""
+        for file in os.listdir(export_dir):
+            if not file.endswith(".xml"):
+                continue
+            try:
+                with open(os.path.join(export_dir, file), 'r', encoding='utf-8') as xml_file:
+                    xml_content = xml_file.read()
+            except Exception as e:
+                logger.error(f"Error reading Wi-Fi profile {file}: {e}")
+                continue
 
-            ssid_match = re.search(r'<name>(.*?)<\/name>', xml_content)
-            password_match = re.search(r'<keyMaterial>(.*?)<\/keyMaterial>', xml_content)
-
+            ssid_match = re.search(r'<name>(.*?)</name>', xml_content)
+            password_match = re.search(r'<keyMaterial>(.*?)</keyMaterial>', xml_content)
             if ssid_match and password_match:
                 ssid = ssid_match.group(1)
                 password = password_match.group(1)
-                message_text = f"SSID: {ssid}\nPASS: {password}"
-                await message.answer(message_text)
+                message_text += f"SSID: <code>{ssid}</code>\nPASS: <tg-spoiler>{password}</tg-spoiler>\n\n"
 
-                try:
-                    os.remove("Wi-Fi-App.xml")
-                except Exception as e:
-                    await message.answer(f"Ошибка при удалении файла Wi-Fi-App.xml: {str(e)}")
-            else:
-                await message.answer("SSID и/или пароль не найдены.")
+        if message_text:
+            await message.answer(message_text)
         else:
-            logger.warning("Wi-Fi-App.xml не найден. Ищем другие XML файлы...")
-            found_data = False
-            message_text = ""
-
-            for file in os.listdir():
-                if file.endswith(".xml"):
-                    try:
-                        with open(file, 'r') as xml_file:
-                            xml_content = xml_file.read()
-
-                        ssid_match = re.search(r'<name>(.*?)<\/name>', xml_content)
-                        password_match = re.search(r'<keyMaterial>(.*?)<\/keyMaterial>', xml_content)
-
-                        if ssid_match and password_match:
-                            ssid = ssid_match.group(1)
-                            password = password_match.group(1)
-                            message_text += f"SSID: <code>{ssid}</code>\nPASS: <tg-spoiler>{password}</tg-spoiler>\n\n"
-                            found_data = True
-
-                            logger.info(f"Данные из файла {file}: SSID< - {ssid}, PASS - {password}")
-                    except Exception as e:
-                        logger.error(f"Ошибка при чтении файла {file}: {str(e)}")
-                        continue
-
-            if found_data:
-                await message.answer(message_text)
-            else:
-                await message.answer("Не удалось найти SSID и пароль в XML файлах.")
-
-            # Check for and delete any XML files created by 'netsh wlan export profile'
-            for file in os.listdir():
-                if file.endswith(".xml"):
-                    try:
-                        os.remove(file)
-                        logger.info(f"🧹 Deleted temporary file: {file}")
-                    except Exception as e:
-                        logger.error(f"❌ Error deleting file {file}: {str(e)}")
-                        log_easy("Error ❌. Check full logs for the details *logs/botLog")
+            await message.answer(_("No saved Wi-Fi networks with a password were found."))
     except Exception as e:
-        logger.error(f"/wifi error: {str(e)} {text_user}")
-        await message.answer(f"Произошла ошибка: {str(e)}")
+        logger.error(f"/wifi error: {str(e)}")
+        await message.answer(_("Error: <b>{error}</b>").format(error=e))
+    finally:
+        shutil.rmtree(export_dir, ignore_errors=True)
