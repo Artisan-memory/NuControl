@@ -1,25 +1,27 @@
-aiofiles==24.1.0
-aiogram==3.20.0.post
-asyncio==3.4.3
+# Telegram bot
+aiogram==3.24.0
 aiohttp==3.11.18
-aioshutil==1.5
-requests==2.32.3
-tendo==0.3.0
-loguru==0.7.3
-opencv-python==4.11.0.86
-watchdog==6.0.0
-python-dotenv==1.1.0
+Babel==2.18.0
+
+# System control / media
+# Compiled packages use lower bounds so pip can grab a wheel matching the
+# running Python (exact pins to older versions have no wheels on Python 3.14+).
+psutil>=7.0.0
+opencv-python>=4.11.0.86
 pyttsx3==2.98
-pyscreenshot==3.1
-pygame==2.6.1
 langid==1.1.6
 pyperclip==1.9.0
-GPUtil==1.4.0
-psutil==7.0.0
-clipboard==0.0.4
-setuptools==80.9.0
+requests==2.32.3
+loguru==0.7.3
+pywin32>=312
 
+# Проигрывание присланных аудио и голосовых.
+# libsndfile в soundfile 0.13+ умеет ogg/opus, в котором Telegram шлёт голосовые
+sounddevice>=0.5.1
+soundfile>=0.13.1
+
+# GUI
 customtkinter==5.2.2
 CTkMessagebox==2.7
-TkToolTip==1.2.0
 pystray==0.19.5
+Pillow>=11.3
